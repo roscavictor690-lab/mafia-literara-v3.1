@@ -121,13 +121,26 @@ function sendToId(room, playerId, message) {
 }
 
 function getPublicPlayers(room) {
+  // BUG FIX 2: Do NOT expose roles publicly - roles are private
   return Array.from(room.players.values()).map(p => ({
     id: p.id,
     name: p.name,
     alive: p.alive,
     isModerator: p.id === room.moderatorId,
     muted: room.mutedThisDay && room.mutedThisDay.has(p.id),
-    role: p.role, // always send role (moderator uses this)
+    // role is NOT included here - sent privately to each player and moderator only
+  }));
+}
+
+function getModeratorPlayers(room) {
+  // Full player info for moderator only
+  return Array.from(room.players.values()).map(p => ({
+    id: p.id,
+    name: p.name,
+    alive: p.alive,
+    isModerator: p.id === room.moderatorId,
+    muted: room.mutedThisDay && room.mutedThisDay.has(p.id),
+    role: p.role,
   }));
 }
 
@@ -161,12 +174,12 @@ function endGame(room, winner) {
   broadcast(room, { type: 'game_ended', winner, players: allPlayers, bestAdvocate });
 }
 
-// ===== NIGHT SEQUENCE (no timers) =====
+// ===== NIGHT - ALL PARALLEL, ends when boschetar finishes =====
 function startNight(room) {
   room.phase = 'night';
-  room.nightPhase = null;
+  room.nightPhase = 'active';
   room.nightActions.clear();
-  room.nightDone.clear();
+  room.nightDone = new Set();
   room.criticQuestion = null;
   room.criticAnswered = false;
   room.executorRequest = null;
@@ -174,68 +187,26 @@ function startNight(room) {
   room.boschetarVisit = null;
   room.fiscTargetId = null;
 
+  // Send public list to all players, full list to moderator
   broadcast(room, { type: 'night_started', dayNumber: room.dayNumber, players: getPublicPlayers(room) });
+  const modPlayer = room.players.get(room.moderatorId);
+  if (modPlayer) sendTo(modPlayer, { type: 'moderator_players_update', players: getModeratorPlayers(room) });
 
-  // Notify executor they can write anytime
-  const executor = Array.from(room.players.values()).find(p => p.role === ROLES.EXECUTOR && p.alive);
-  if (executor) sendTo(executor, { type: 'executor_can_write' });
-
-  advanceNight(room);
-}
-
-function advanceNight(room) {
-  const phases = NIGHT_SEQUENCE;
-  let nextPhase = null;
-
-  if (!room.nightPhase) {
-    nextPhase = getNextActivePhase(room, null);
-  } else {
-    const idx = phases.indexOf(room.nightPhase);
-    nextPhase = getNextActivePhase(room, idx);
-  }
-
-  if (!nextPhase) {
-    // All phases done - resolve night
-    resolveNight(room);
-    return;
-  }
-
-  room.nightPhase = nextPhase;
-
-  // Notify all players of current phase
+  // Notify each player of their night role - all at once (PARALLEL)
   room.players.forEach(p => {
     if (!p.alive || p.id === room.moderatorId) return;
-    const isActive = isActiveInPhase(p.role, nextPhase);
-    sendTo(p, { type: 'night_phase', phase: nextPhase, active: isActive });
+    sendTo(p, { type: 'night_phase', phase: 'active', active: true, role: p.role });
   });
-
-  // Notify moderator
-  const mod = room.players.get(room.moderatorId);
-  if (mod) sendTo(mod, { type: 'night_phase', phase: nextPhase, active: false });
 }
 
-function getNextActivePhase(room, currentIdx) {
-  const phases = NIGHT_SEQUENCE;
-  const start = currentIdx === null ? 0 : currentIdx + 1;
-  for (let i = start; i < phases.length; i++) {
-    const phase = phases[i];
-    const hasPlayer = Array.from(room.players.values()).some(p =>
-      p.alive && isActiveInPhase(p.role, phase)
-    );
-    if (hasPlayer) return phase;
-  }
-  return null;
+// Called after boschetar acts OR moderator forces day
+function advanceNight(room) {
+  resolveNight(room);
 }
 
 function isActiveInPhase(role, phase) {
-  switch (phase) {
-    case 'doctor': return role === ROLES.DOCTOR;
-    case 'fisc': return role === ROLES.FISC;
-    case 'critic': return role === ROLES.CRITIC;
-    case 'mafia': return isMafia(role);
-    case 'boschetar': return role === ROLES.BOSCHETAR;
-    default: return false;
-  }
+  // Kept for compatibility
+  return true;
 }
 
 function processCriticAnswer(room, playerId, answer) {
@@ -354,10 +325,16 @@ function resolveNight(room) {
   const winner = checkWin(room);
   if (winner) { endGame(room, winner); return; }
 
+  const pubPlayers = getPublicPlayers(room);
+  const modPlayersData = getModeratorPlayers(room);
+  // Send moderator their special full list
+  const modRef = room.players.get(room.moderatorId);
+  if (modRef) sendTo(modRef, { type: 'moderator_players_update', players: modPlayersData });
+
   broadcast(room, {
     type: 'day_started',
     dayNumber: room.dayNumber,
-    players: getPublicPlayers(room),
+    players: pubPlayers,
     dayLog: room.dayLog,
     mafiaKilled,
     executorKilled,
@@ -531,7 +508,7 @@ wss.on('connection', (ws) => {
               sendTo(player, { type: 'game_started', role: player.role, mafiaTeam, players: getPublicPlayers(room) });
           }, 600);
         });
-        sendToId(room, room.moderatorId, { type: 'game_started', role: 'moderator', players: getPublicPlayers(room) });
+        sendToId(room, room.moderatorId, { type: 'game_started', role: 'moderator', players: getModeratorPlayers(room) });
 
         // Start night after 11s (10s role reveal + 1s buffer)
         setTimeout(() => startNight(room), 11000);
@@ -546,30 +523,30 @@ wss.on('connection', (ws) => {
 
         switch (msg.action) {
           case 'doctor_save':
-            if (player.role === ROLES.DOCTOR && room.nightPhase === 'doctor') {
+            if (player.role === ROLES.DOCTOR && room.phase === 'night' && !room.nightDone.has(playerId)) {
               room.nightActions.set('doctor_saved', msg.targetId);
+              room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              // BUG FIX 2: Small delay to ensure confirmed message arrives before phase change
-              setTimeout(() => advanceNight(room), 200);
             }
             break;
 
           case 'fisc_mute':
-            if (player.role === ROLES.FISC && room.nightPhase === 'fisc') {
+            if (player.role === ROLES.FISC && room.phase === 'night' && !room.nightDone.has(playerId)) {
               room.fiscTargetId = msg.targetId;
+              room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              setTimeout(() => advanceNight(room), 200);
             }
             break;
 
           case 'critic_send_question':
-            if (player.role === ROLES.CRITIC && room.nightPhase === 'critic') {
+            if (player.role === ROLES.CRITIC && room.phase === 'night' && !room.nightDone.has(playerId)) {
               room.criticQuestion = {
                 question: msg.question,
                 correctAnswer: msg.correctAnswer,
                 targetId: msg.targetId,
                 askedBy: playerId,
               };
+              room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
               // Send question to target
               const target = room.players.get(msg.targetId);
@@ -581,13 +558,11 @@ wss.on('connection', (ws) => {
             if (room.criticQuestion && msg.targetId === room.criticQuestion.targetId && !room.criticAnswered) {
               processCriticAnswer(room, playerId, msg.answer);
               sendTo(player, { type: 'night_action_confirmed' });
-              // Advance critic phase after answer
-              if (room.nightPhase === 'critic') advanceNight(room);
             }
             break;
 
           case 'mafia_kill':
-            if (isMafia(player.role) && room.nightPhase === 'mafia') {
+            if (isMafia(player.role) && room.phase === 'night') {
               // Avocatii nu pot fi tinta mafiei
               const killTarget = room.players.get(msg.targetId);
               if (killTarget && killTarget.role === ROLES.AVOCAT) {
@@ -595,20 +570,19 @@ wss.on('connection', (ws) => {
                 return;
               }
               room.nightActions.set(`mafia_kill_${playerId}`, msg.targetId);
+              room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              // Check if all alive mafia voted
-              const aliveMafia = Array.from(room.players.values()).filter(p => isMafia(p.role) && p.alive);
-              const voted = aliveMafia.filter(p => room.nightActions.has(`mafia_kill_${p.id}`));
-              if (voted.length >= aliveMafia.length) advanceNight(room);
             }
             break;
 
           case 'boschetar_visit':
-            if (player.role === ROLES.BOSCHETAR && room.nightPhase === 'boschetar') {
+            if (player.role === ROLES.BOSCHETAR && room.phase === 'night' && !room.nightDone.has(playerId)) {
               room.boschetarVisit = { vagrantId: playerId, visitedId: msg.targetId, sawVisitor: false };
               room.nightActions.set(`visit_${playerId}`, msg.targetId);
+              room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              advanceNight(room); // This ends the night
+              // Boschetarul ends the night
+              resolveNight(room);
             }
             break;
 
@@ -648,7 +622,7 @@ wss.on('connection', (ws) => {
             break;
 
           case 'sebastian_action':
-            if (player.role === ROLES.SEBASTIAN && room.nightPhase === 'mafia') {
+            if (player.role === ROLES.SEBASTIAN && room.phase === 'night') {
               room.nightActions.set('sebastian_target', { targetId: msg.targetId, forMafia: msg.forMafia });
             }
             break;
