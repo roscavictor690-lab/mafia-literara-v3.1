@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mafia Literară</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0d06;
+  --felt:#0d2010;
+  --felt2:#091508;
+  --surface:rgba(8,20,10,0.88);
+  --surface2:rgba(10,26,13,0.92);
+  --border:rgba(180,120,20,0.22);
+  --border2:rgba(120,30,30,0.3);
+  --gold:#c9a84c;--gold2:#e8c87a;
+  --red:#8b1a1a;--red2:#c0392b;--crimson:#6b0f0f;
+  --bordo:#7a1428;--bordo2:#a01830;
+  --text:#f0ebe0;--muted:#8a9a82;
+  --green:#2d6a4f;--green2:#52b788;
+  --neon:#39ff6a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia,serif;font-size:16px;}
+
+/* ===== CASINO BACKGROUND ===== */
+.bg-wrap{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
+
+/* Felt base */
+.bg-wrap::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 110% 90% at 50% 55%, #0d2b14 0%, #091a0c 50%, #050e06 100%);
+}
+/* Fine felt grain */
+.bg-wrap::after{
+  content:'';position:absolute;inset:0;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px),
+    repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,0.03) 3px,rgba(0,0,0,0.03) 4px);
+}
+
+/* Bordo oval border */
+.bg-border{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:94%;height:88%;
+  border-radius:50%;
+  border:4px solid rgba(122,20,40,0.6);
+  box-shadow:0 0 0 2px rgba(160,24,48,0.2),0 0 30px rgba(122,20,40,0.15),inset 0 0 50px rgba(0,0,0,0.3);
+}
+/* Inner gold line */
+.bg-border::after{
+  content:'';position:absolute;inset:6px;border-radius:50%;
+  border:1px solid rgba(201,168,76,0.12);
+}
+
+/* Masks */
+.bg-mask{
+  position:absolute;font-size:5rem;opacity:0.06;
+  animation:floatEl 9s ease-in-out infinite;
+  filter:drop-shadow(0 0 8px rgba(201,168,76,0.2));
+}
+.bg-mask:nth-child(2){top:4%;left:3%;font-size:4.5rem;animation-delay:0s;}
+.bg-mask:nth-child(3){top:6%;right:4%;font-size:5.5rem;animation-delay:2s;opacity:0.05;}
+
+/* Chips */
+.bg-chip{
+  position:absolute;border-radius:50%;
+  animation:floatEl 7s ease-in-out infinite;
+}
+.bg-chip:nth-child(4){
+  width:52px;height:52px;bottom:9%;left:5%;opacity:0.13;
+  background:radial-gradient(circle,#c0392b,#7a1a1a);
+  border:3px solid rgba(201,168,76,0.5);
+  box-shadow:0 0 10px rgba(192,57,43,0.2);
+  animation-delay:0.5s;
+}
+.bg-chip:nth-child(5){
+  width:40px;height:40px;bottom:6%;left:13%;opacity:0.09;
+  background:radial-gradient(circle,#c0392b,#7a1a1a);
+  border:2px solid rgba(201,168,76,0.4);
+  animation-delay:1.2s;
+}
+.bg-chip:nth-child(6){
+  width:46px;height:46px;bottom:11%;right:6%;opacity:0.11;
+  background:radial-gradient(circle,#c9a84c,#8b6914);
+  border:3px solid rgba(255,255,255,0.2);
+  animation-delay:3s;
+}
+.bg-chip:nth-child(7){
+  width:34px;height:34px;bottom:7%;right:14%;opacity:0.08;
+  background:radial-gradient(circle,#2c3e50,#1a252f);
+  border:2px solid rgba(201,168,76,0.3);
+  animation-delay:1.8s;
+}
+.bg-chip:nth-child(8){
+  width:30px;height:30px;top:12%;left:12%;opacity:0.08;
+  background:radial-gradient(circle,#c0392b,#7a1a1a);
+  border:2px solid rgba(201,168,76,0.3);
+  animation-delay:4s;
+}
+
+/* Cards */
+.bg-card{
+  position:absolute;width:26px;height:38px;
+  background:rgba(240,235,224,0.05);
+  border:1px solid rgba(240,235,224,0.08);
+  border-radius:3px;
+  animation:floatEl 8s ease-in-out infinite;
+}
+.bg-card:nth-child(9){bottom:18%;left:20%;transform:rotate(-18deg);animation-delay:1s;}
+.bg-card:nth-child(10){bottom:22%;right:18%;transform:rotate(22deg);animation-delay:2.5s;}
+.bg-card:nth-child(11){top:14%;left:35%;transform:rotate(8deg);animation-delay:0.3s;opacity:0.04;}
+
+/* Cocktails */
+.bg-cocktail{
+  position:absolute;font-size:2.2rem;opacity:0.07;
+  animation:floatEl 10s ease-in-out infinite;
+}
+.bg-cocktail:nth-child(12){top:10%;right:18%;animation-delay:1.5s;}
+.bg-cocktail:nth-child(13){bottom:20%;left:8%;font-size:2rem;animation-delay:3.5s;opacity:0.06;}
+
+@keyframes floatEl{
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  33%{transform:translateY(-8px) rotate(3deg);}
+  66%{transform:translateY(-4px) rotate(-2deg);}
+}
+
+/* ===== LAYOUT ===== */
+#app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;}
+.screen{display:none;flex-direction:column;height:100dvh;overflow:hidden;animation:fadeUp 0.3s ease;}
+.screen.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.scroll-area{flex:1;overflow-y:auto;padding:14px 18px;-webkit-overflow-scrolling:touch;}
+.scroll-area::-webkit-scrollbar{width:2px;}
+.scroll-area::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);}
+
+/* ===== ROLE BADGE (always visible) ===== */
+.role-badge-fixed{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:5px 14px;
+  background:rgba(0,0,0,0.7);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.role-badge-fixed .rb-icon{font-size:0.9rem;}
+.role-badge-fixed .rb-name{
+  font-family:'Playfair Display',serif;
+  font-size:0.75rem;font-weight:700;
+  letter-spacing:0.08em;
+  color:var(--neon);
+  text-shadow:0 0 8px rgba(57,255,106,0.5);
+}
+
+/* ===== TOP BAR ===== */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 0;flex-shrink:0;}
+.top-bar-title{font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;color:var(--gold);}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{display:flex;border-top:1px solid var(--border2);background:rgba(5,12,7,0.96);flex-shrink:0;backdrop-filter:blur(8px);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 8px;background:none;border:none;color:var(--muted);font-family:'EB Garamond',serif;font-size:0.65rem;cursor:pointer;transition:all 0.2s;gap:2px;}
+.nav-btn .nav-icon{font-size:1.2rem;}
+.nav-btn.active{color:var(--gold);}
+
+/* ===== LOGO ===== */
+.logo-block{text-align:center;padding:28px 18px 16px;}
+.logo-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,8vw,3.2rem);font-weight:900;
+  background:linear-gradient(135deg,#8b6914,var(--gold),var(--gold2),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 16px rgba(201,168,76,0.3));line-height:1.1;
+}
+.logo-sub{text-align:center;font-size:0.75rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-top:4px;font-style:italic;}
+
+/* ===== BUTTONS ===== */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 18px;border:none;border-radius:3px;font-family:'Playfair Display',serif;font-size:0.9rem;font-weight:700;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;}
+.btn-gold{background:linear-gradient(135deg,#6b4c0a,var(--gold));color:#080e05;box-shadow:0 4px 14px rgba(201,168,76,0.2);}
+.btn-gold:active{transform:scale(0.98);}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border);}
+.btn-outline:active{background:rgba(201,168,76,0.08);}
+.btn-red{background:linear-gradient(135deg,var(--crimson),var(--red2));color:#fff;}
+.btn-bordo{background:linear-gradient(135deg,var(--bordo),var(--bordo2));color:#fff;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn:disabled{opacity:0.3;pointer-events:none;}
+.btn-sm{padding:10px 14px;font-size:0.8rem;}
+
+/* ===== INPUTS ===== */
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.field input,.field textarea,.field select{
+  width:100%;padding:12px 14px;
+  background:rgba(8,20,10,0.9);border:1px solid var(--border);border-radius:3px;
+  color:var(--text);font-family:'EB Garamond',serif;font-size:1rem;outline:none;
+  transition:border-color 0.2s;resize:none;
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);}
+.code-input{font-family:'Playfair Display',serif!important;font-size:2rem!important;text-align:center;letter-spacing:0.4em!important;}
+
+/* ===== CODE DISPLAY ===== */
+.code-display{text-align:center;padding:14px;}
+.code-display .label{font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.code-display .code{font-family:'Playfair Display',serif;font-size:3rem;font-weight:900;letter-spacing:0.4em;color:var(--gold);text-shadow:0 0 20px rgba(201,168,76,0.3);}
+.code-display .count{font-size:0.8rem;color:var(--muted);margin-top:3px;}
+
+/* ===== PLAYER LIST ===== */
+.player-list{display:flex;flex-direction:column;gap:5px;}
+.player-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;
+  background:rgba(8,20,10,0.8);
+  border:1px solid rgba(201,168,76,0.12);
+  border-radius:4px;
+}
+.player-item.dead{opacity:0.35;border-color:rgba(192,57,43,0.3);background:rgba(30,5,5,0.5);}
+.player-item.dead .p-name{text-decoration:line-through;color:var(--red2);}
+.player-item.avocat-item{border-color:rgba(201,168,76,0.4);background:rgba(20,16,5,0.8);}
+.p-avatar{width:30px;height:30px;border-radius:50%;background:rgba(8,20,10,0.9);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0;}
+.p-name{flex:1;font-size:0.9rem;}
+.p-badge{font-family:'Playfair Display',serif;font-size:0.58rem;font-weight:700;letter-spacing:0.07em;padding:2px 6px;border-radius:2px;text-transform:uppercase;white-space:nowrap;}
+.badge-gold{background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid rgba(201,168,76,0.3);}
+.badge-you{background:rgba(41,128,185,0.15);color:#5dade2;border:1px solid rgba(41,128,185,0.3);}
+.badge-dead{background:rgba(192,57,43,0.15);color:#e87a7a;border:1px solid rgba(192,57,43,0.3);}
+.badge-avocat{background:rgba(201,168,76,0.2);color:var(--gold2);border:1px solid rgba(201,168,76,0.4);}
+.p-role-tag{font-size:0.75rem;color:var(--muted);}
+
+/* ===== ROLE REVEAL CARD ===== */
+.role-reveal-screen{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(5,10,6,0.97);
+  animation:fadeUp 0.4s ease;
+}
+.role-reveal-card{text-align:center;padding:32px 24px;border-radius:10px;width:85%;max-width:320px;}
+.role-reveal-card .countdown{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-top:16px;}
+.role-reveal-card .countdown-sub{font-size:0.8rem;color:var(--muted);margin-top:4px;}
+.role-icon-big{font-size:4rem;margin-bottom:12px;display:block;}
+.role-name-big{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;}
+.role-desc-txt{font-size:0.9rem;color:var(--muted);margin-top:8px;line-height:1.5;font-style:italic;}
+.role-team-badge{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:2px;font-family:'Playfair Display',serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+
+.rc-critic{color:#9b59b6;border:2px solid rgba(155,89,182,0.4);background:rgba(155,89,182,0.05);}
+.rc-avocat{color:var(--gold2);border:2px solid rgba(201,168,76,0.4);background:rgba(201,168,76,0.05);}
+.rc-doctor{color:var(--green2);border:2px solid rgba(82,183,136,0.4);background:rgba(82,183,136,0.05);}
+.rc-fisc{color:#e67e22;border:2px solid rgba(230,126,34,0.4);background:rgba(230,126,34,0.05);}
+.rc-don{color:var(--red2);border:2px solid rgba(192,57,43,0.4);background:rgba(192,57,43,0.05);}
+.rc-sebastian{color:#e74c3c;border:2px solid rgba(231,76,60,0.3);background:rgba(231,76,60,0.04);}
+.rc-mafiot{color:#e74c3c;border:2px solid rgba(231,76,60,0.3);background:rgba(231,76,60,0.04);}
+.rc-boschetar{color:#f39c12;border:2px solid rgba(243,156,18,0.4);background:rgba(243,156,18,0.05);}
+.rc-executor{color:#8e44ad;border:2px solid rgba(142,68,173,0.4);background:rgba(142,68,173,0.05);}
+.rc-locuitor{color:var(--muted);border:2px solid rgba(138,154,130,0.3);background:rgba(138,154,130,0.03);}
+
+/* ===== PHASE HEADER ===== */
+.phase-hdr{text-align:center;padding:12px 18px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.phase-hdr-night{background:linear-gradient(180deg,rgba(5,5,20,0.9),transparent);}
+.phase-hdr-day{background:linear-gradient(180deg,rgba(15,10,3,0.9),transparent);}
+.phase-title{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;}
+.phase-night-color{color:#9b8fd4;}
+.phase-day-color{color:var(--gold);}
+.phase-sub{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+
+/* ===== ACTION GRID ===== */
+.target-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px;}
+.target-btn{
+  padding:11px 8px;
+  background:rgba(8,20,10,0.85);
+  border:1px solid var(--border);
+  border-radius:4px;color:var(--text);
+  font-family:'EB Garamond',serif;font-size:0.9rem;cursor:pointer;transition:all 0.2s;text-align:center;
+}
+.target-btn:active,.target-btn.sel{border-color:var(--gold);background:rgba(201,168,76,0.1);color:var(--gold);}
+.target-btn.voted{border-color:var(--red2);background:rgba(192,57,43,0.1);color:#e87a7a;}
+.target-btn.critic-green{border-color:var(--green2)!important;background:rgba(82,183,136,0.1)!important;color:var(--green2)!important;}
+.target-btn.critic-red{border-color:var(--red2)!important;background:rgba(192,57,43,0.1)!important;color:#e87a7a!important;}
+.target-btn.avocat-btn{border-color:rgba(201,168,76,0.4)!important;color:var(--gold)!important;opacity:0.5;pointer-events:none;}
+
+/* ===== CHAT ===== */
+.chat-wrap{display:flex;flex-direction:column;height:100%;}
+.chat-msgs{flex:1;overflow-y:auto;padding:8px 14px;display:flex;flex-direction:column;gap:5px;}
+.chat-msg{font-size:0.88rem;line-height:1.4;padding:5px 10px;background:rgba(8,20,10,0.6);border-radius:3px;}
+.chat-msg .sender{font-weight:600;color:var(--gold);}
+.chat-msg.system{color:var(--muted);font-style:italic;background:transparent;padding:3px 10px;}
+.chat-msg.mafia-msg .sender{color:var(--red2);}
+.chat-input-row{display:flex;border-top:1px solid var(--border);flex-shrink:0;}
+.chat-in{flex:1;padding:9px 12px;background:transparent;border:none;color:var(--text);font-family:'EB Garamond',serif;font-size:0.95rem;outline:none;}
+.chat-send-btn{padding:9px 12px;background:rgba(201,168,76,0.12);border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;}
+
+/* ===== STATUS ===== */
+.status{padding:11px 14px;border-radius:3px;font-size:0.88rem;margin-bottom:9px;text-align:center;}
+.s-info{background:rgba(41,128,185,0.1);border:1px solid rgba(41,128,185,0.2);color:#5dade2;}
+.s-success{background:rgba(45,106,79,0.15);border:1px solid rgba(82,183,136,0.2);color:var(--green2);}
+.s-danger{background:rgba(139,26,26,0.15);border:1px solid rgba(192,57,43,0.2);color:#e87a7a;}
+.s-warn{background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);color:var(--gold);}
+.s-purple{background:rgba(142,68,173,0.1);border:1px solid rgba(142,68,173,0.2);color:#c39bd3;}
+.s-neon{background:rgba(57,255,106,0.06);border:1px solid rgba(57,255,106,0.2);color:var(--neon);}
+
+/* ===== VOTE TALLY ===== */
+.vote-tally{background:rgba(8,20,10,0.8);border:1px solid var(--border);border-radius:5px;padding:12px;}
+.v-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.v-bar-bg{flex:1;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;}
+.v-bar{height:100%;border-radius:2px;background:var(--red2);transition:width 0.4s;}
+.v-count{font-family:'Playfair Display',serif;font-size:0.7rem;color:var(--muted);min-width:16px;text-align:right;}
+
+/* ===== JUDGE ===== */
+.judge-btns{display:flex;gap:10px;margin-top:10px;}
+.judge-btn{flex:1;padding:13px;border:none;border-radius:3px;font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.judge-elim{background:rgba(192,57,43,0.2);border:1px solid rgba(192,57,43,0.4);color:#e87a7a;}
+.judge-elim.voted{background:var(--red2);color:#fff;}
+.judge-spare{background:rgba(45,106,79,0.2);border:1px solid rgba(82,183,136,0.3);color:var(--green2);}
+.judge-spare.voted{background:var(--green);color:#fff;}
+
+/* ===== TIP CARDS ===== */
+.tip-card{background:rgba(8,20,10,0.8);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:9px;}
+.tip-icon{font-size:1.3rem;margin-bottom:5px;display:block;}
+.tip-title{font-family:'Playfair Display',serif;font-size:0.85rem;font-weight:700;color:var(--gold);margin-bottom:3px;}
+.tip-text{font-size:0.82rem;color:var(--muted);line-height:1.5;}
+
+/* ===== ROLE INFO CARDS ===== */
+.role-info-card{background:rgba(8,20,10,0.85);border:1px solid var(--border);border-radius:5px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;}
+.ri-icon{font-size:1.6rem;flex-shrink:0;margin-top:2px;}
+.ri-name{font-family:'Playfair Display',serif;font-size:0.85rem;font-weight:700;color:var(--gold);margin-bottom:3px;}
+.ri-desc{font-size:0.78rem;color:var(--muted);line-height:1.5;}
+.ri-team{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--red2);margin-top:3px;font-weight:700;}
+
+/* ===== NIGHT PHASE BOX ===== */
+.night-phase-box{background:rgba(8,20,10,0.85);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:10px;text-align:center;}
+.night-phase-name{font-family:'Playfair Display',serif;font-size:0.95rem;font-weight:700;color:var(--gold);}
+.night-waiting{color:var(--muted);font-size:0.8rem;font-style:italic;margin-top:4px;}
+
+/* ===== MISC ===== */
+.sec-label{font-family:'Playfair Display',serif;font-size:0.68rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:12px 0;}
+.card{background:rgba(8,20,10,0.85);border:1px solid var(--border);border-radius:5px;padding:14px;margin-bottom:9px;}
+.card-title{font-family:'Playfair Display',serif;font-size:0.75rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:9px;}
+
+#toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(8,20,10,0.96);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:3px;font-size:0.82rem;z-index:9999;transition:transform 0.3s;max-width:85vw;text-align:center;backdrop-filter:blur(8px);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+.winner-block{text-align:center;padding:28px 18px 14px;}
+.winner-icon{font-size:4rem;display:block;margin-bottom:10px;animation:pulse 1.5s ease infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.winner-title{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:900;}
+.w-mafia{color:var(--red2);text-shadow:0 0 16px rgba(192,57,43,0.4);}
+.w-citizens{color:var(--green2);text-shadow:0 0 16px rgba(82,183,136,0.4);}
+.waiting-dots::after{content:'';animation:dots 1.5s steps(4,end) infinite;}
+@keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
+</style>
+</head>
+<body>
+
+<div class="bg-wrap">
+  <div class="bg-border"></div>
+  <div class="bg-mask">🎭</div>
+  <div class="bg-mask">🎭</div>
+  <div class="bg-chip"></div>
+  <div class="bg-chip"></div>
+  <div class="bg-chip"></div>
+  <div class="bg-chip"></div>
+  <div class="bg-chip"></div>
+  <div class="bg-card"></div>
+  <div class="bg-card"></div>
+  <div class="bg-card"></div>
+  <div class="bg-cocktail">🍸</div>
+  <div class="bg-cocktail">🥃</div>
+</div>
+
+<div id="app">
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div class="scroll-area" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="logo-block">
+      <div class="logo-title">Mafia<br>Literară</div>
+      <div class="logo-sub">Orașul tace. Cineva minte.</div>
+    </div>
+    <div style="padding:0 18px 40px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-gold" onclick="goCreate()">⚜ Creează cameră</button>
+      <button class="btn btn-outline" onclick="goJoin()">📖 Intră în cameră</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE -->
+<div id="s-create" class="screen">
+  <div class="top-bar">
+    <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="showScreen('s-home')">← Înapoi</button>
+    <div class="top-bar-title">Moderator</div>
+    <div style="width:70px;"></div>
+  </div>
+  <div class="scroll-area">
+    <div class="field" style="margin-top:20px;">
+      <label>Numele tău</label>
+      <input type="text" id="create-name" placeholder="Profesor..." maxlength="20">
+    </div>
+    <p style="font-size:0.82rem;color:var(--muted);font-style:italic;margin-bottom:14px;">Vei fi moderatorul — nu primești rol, dar participi la judecată.</p>
+    <button class="btn btn-gold" onclick="createRoom()">⚜ Creează camera</button>
+  </div>
+</div>
+
+<!-- JOIN -->
+<div id="s-join" class="screen">
+  <div class="top-bar">
+    <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="showScreen('s-home')">← Înapoi</button>
+    <div class="top-bar-title">Intră în joc</div>
+    <div style="width:70px;"></div>
+  </div>
+  <div class="scroll-area">
+    <div class="field" style="margin-top:20px;">
+      <label>Numele tău</label>
+      <input type="text" id="join-name" placeholder="Numele tău..." maxlength="20">
+    </div>
+    <div class="field">
+      <label>Codul camerei</label>
+      <input type="text" id="join-code" class="code-input" placeholder="1234" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+    </div>
+    <button class="btn btn-gold" onclick="joinRoom()">📖 Intră în cameră</button>
+  </div>
+</div>
+
+<!-- LOBBY MOD -->
+<div id="s-lobby-mod" class="screen">
+  <div class="top-bar">
+    <div class="top-bar-title">Mafia Literară</div>
+    <div id="lm-count-top" style="font-size:0.75rem;color:var(--muted);"></div>
+  </div>
+  <div class="scroll-area">
+    <div class="code-display">
+      <div class="label">Codul camerei</div>
+      <div class="code" id="lm-code">----</div>
+      <div class="count" id="lm-count">0 jucători</div>
+    </div>
+    <div class="sec-label">Jucători conectați</div>
+    <div id="lm-players" class="player-list"></div>
+  </div>
+  <div style="padding:10px 18px 18px;flex-shrink:0;">
+    <p style="text-align:center;color:var(--muted);font-size:0.75rem;margin-bottom:8px;" id="lm-hint">Minim 13 jucători pentru a începe.</p>
+    <button class="btn btn-gold" id="lm-start-btn" onclick="startGame()" disabled>⚔ Începe jocul</button>
+  </div>
+</div>
+
+<!-- LOBBY PLAYER -->
+<div id="s-lobby-player" class="screen">
+  <div class="top-bar">
+    <div class="top-bar-title">Mafia Literară</div>
+    <div id="lp-count" style="font-size:0.75rem;color:var(--muted);"></div>
+  </div>
+  <div class="scroll-area">
+    <div class="code-display">
+      <div class="label">Camera</div>
+      <div class="code" id="lp-code">----</div>
+    </div>
+    <div class="status s-info" style="text-align:center;margin-bottom:10px;">
+      <strong id="lp-mod-name"></strong> pregătește jocul<span class="waiting-dots"></span>
+    </div>
+    <div class="status s-warn" style="margin-bottom:12px;text-align:center;" id="lp-count-display"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn btn-outline btn-sm" onclick="showScreen('s-roles-info')" style="flex:1;">📚 Rolurile jocului</button>
+    </div>
+    <div class="sec-label">Sfaturi</div>
+    <div class="tip-card"><span class="tip-icon">👁️</span><div class="tip-title">Observă comportamentul</div><div class="tip-text">Cine evită privirea? Reacțiile neașteptate pot trăda.</div></div>
+    <div class="tip-card"><span class="tip-icon">🗣️</span><div class="tip-title">Argumentează logic</div><div class="tip-text">La judecată, argumentele clare au mai multă greutate decât acuzațiile emoționale.</div></div>
+    <div class="tip-card"><span class="tip-icon">🎭</span><div class="tip-title">Blufează inteligent</div><div class="tip-text">O acoperire bine construită de la început e mai eficientă decât una improvizată.</div></div>
+  </div>
+</div>
+
+<!-- ROLES INFO PAGE -->
+<div id="s-roles-info" class="screen">
+  <div class="top-bar">
+    <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="showScreen('s-lobby-player')">← Înapoi</button>
+    <div class="top-bar-title">Rolurile jocului</div>
+    <div style="width:70px;"></div>
+  </div>
+  <div class="scroll-area">
+    <div id="roles-info-list"></div>
+  </div>
+</div>
+
+<!-- NIGHT PLAYER -->
+<div id="s-night-player" class="screen">
+  <div class="role-badge-fixed" id="rbf-night" style="display:none;">
+    <span class="rb-icon" id="rbf-night-icon"></span>
+    <span class="rb-name" id="rbf-night-name"></span>
+  </div>
+  <div class="phase-hdr phase-hdr-night">
+    <div class="phase-title phase-night-color">🌙 Noaptea</div>
+    <div class="phase-sub" id="np-phase-sub">Așteaptă...</div>
+  </div>
+  <div class="scroll-area" id="np-content"></div>
+</div>
+
+<!-- NIGHT MOD -->
+<div id="s-night-mod" class="screen">
+  <div class="phase-hdr phase-hdr-night">
+    <div class="phase-title phase-night-color">🌙 Noaptea <span id="nm-day"></span></div>
+    <div class="phase-sub" id="nm-phase-name">Jucătorii acționează</div>
+  </div>
+  <div class="scroll-area">
+    <div class="sec-label">Jucători și roluri</div>
+    <div id="nm-players" class="player-list"></div>
+    <div id="nm-executor-section" style="margin-top:10px;"></div>
+  </div>
+  <div style="padding:10px 18px 16px;flex-shrink:0;">
+    <button class="btn btn-gold btn-sm" onclick="modStartDay()">☀ Treci la zi (forțat)</button>
+  </div>
+</div>
+
+<!-- DAY -->
+<div id="s-day" class="screen">
+  <div class="role-badge-fixed" id="rbf-day" style="display:none;">
+    <span class="rb-icon" id="rbf-day-icon"></span>
+    <span class="rb-name" id="rbf-day-name"></span>
+  </div>
+  <div class="phase-hdr phase-hdr-day">
+    <div class="phase-title phase-day-color">☀ Ziua <span id="day-num"></span></div>
+    <div class="phase-sub" id="day-sub">Discutați și votați</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <div id="tab-chat" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="chat-wrap">
+        <div class="chat-msgs" id="day-chat-msgs"></div>
+        <div class="chat-input-row" id="day-chat-input-row">
+          <input class="chat-in" id="day-chat-in" placeholder="Scrie un mesaj..." onkeydown="if(event.key==='Enter')sendDayChat()" maxlength="300">
+          <button class="chat-send-btn" onclick="sendDayChat()">➤</button>
+        </div>
+      </div>
+    </div>
+    <div id="tab-vote" style="flex:1;overflow-y:auto;padding:12px 18px;display:none;">
+      <div id="vote-content"></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-chat-btn" onclick="switchTab('chat')">
+      <span class="nav-icon">💬</span><span>Chat</span>
+    </button>
+    <button class="nav-btn" id="nav-vote-btn" onclick="switchTab('vote')">
+      <span class="nav-icon">⚖️</span><span id="nav-vote-label">Vot</span>
+    </button>
+    <button class="nav-btn" id="nav-players-btn" onclick="switchTab('players')">
+      <span class="nav-icon">👥</span><span>Jucători</span>
+    </button>
+  </div>
+</div>
+
+<!-- PLAYERS TAB (inside day) -->
+<div id="tab-players" style="flex:1;overflow-y:auto;padding:12px 18px;display:none;"></div>
+
+<!-- END -->
+<div id="s-end" class="screen">
+  <div class="scroll-area">
+    <div class="winner-block">
+      <span class="winner-icon" id="end-icon">🏆</span>
+      <div class="winner-title" id="end-title"></div>
+      <p style="color:var(--muted);margin-top:6px;font-style:italic;" id="end-sub"></p>
+    </div>
+    <div id="end-advocate" style="display:none;" class="card">
+      <div class="card-title">⭐ Cel mai bun Avocat</div>
+      <div id="end-advocate-name" style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);"></div>
+      <div id="end-advocate-rating" style="font-size:0.8rem;color:var(--muted);margin-top:3px;"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="sec-label">Rolurile tuturor</div>
+    <div id="end-players" class="player-list" style="margin-bottom:18px;"></div>
+    <button class="btn btn-gold" onclick="resetGame()">Joacă din nou</button>
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<!-- ROLE REVEAL OVERLAY -->
+<div id="role-reveal-overlay" style="display:none;" class="role-reveal-screen">
+  <div id="role-reveal-card" class="role-reveal-card rc-locuitor">
+    <span class="role-icon-big" id="rro-icon">📖</span>
+    <div class="role-name-big" id="rro-name">Locuitor</div>
+    <div class="role-desc-txt" id="rro-desc"></div>
+    <div id="rro-team" style="display:none;" class="role-team-badge"></div>
+    <div id="rro-mafia-team" style="display:none;margin-top:12px;"></div>
+    <div class="countdown" id="rro-countdown">10</div>
+    <div class="countdown-sub">secunde până la începerea nopții</div>
+  </div>
+</div>
+
+<script>
+// ===== ROLE DATA =====
+const RD = {
+  critic:    {name:'Criticul Lingvist-Literar',   icon:'📝',cls:'rc-critic',   team:null,           desc:'Noaptea trimiți o întrebare DA/NU unui jucător. Tu singur vezi culoarea (verde/roșu) lângă numele lui în zilele ce urmează.'},
+  avocat:    {name:'Avocatul Lingvist-Literar',   icon:'⚖️', cls:'rc-avocat',  team:null,           desc:'Nu poți fi votat, omorât sau eliminat. La judecată, primul avocat care apasă butonul de apărare câștigă dreptul de a-l apăra pe acuzat. Câștigă avocatul cu ratingul cel mai mare la final.'},
+  doctor:    {name:'Doctorul Lingvist-Literar',   icon:'📖', cls:'rc-doctor',  team:null,           desc:'Noaptea salvezi un jucător de la eliminarea mafiei. Dacă Criticul vine la cel salvat, răspunsul devine automat corect.'},
+  fisc:      {name:'Fiscul Lingvist-Literar',     icon:'🏛️', cls:'rc-fisc',    team:null,           desc:'Noaptea blochezi un jucător — nu poate face nicio acțiune în acea noapte și ziua următoare. Dacă Criticul vine la el, răspunsul devine greșit.'},
+  don:       {name:'Don Salieri',                 icon:'🎩', cls:'rc-don',     team:'Mafia Literară',desc:'Liderul mafiei. Boschetarul îl vede pe tine în loc de mafiotul real care a ucis. Participi la votul de noapte și la chat.'},
+  sebastian: {name:'Sebastian',                   icon:'🃏', cls:'rc-sebastian',team:'Mafia Literară',desc:'Poți da răspuns corect automat unui mafiot vizitat de Critic, SAU mergi la un om din afara mafiei și îi dai răspuns greșit dacă vine Criticul.'},
+  mafiot:    {name:'Mafiotul Literar',            icon:'🔫', cls:'rc-mafiot',  team:'Mafia Literară',desc:'Participi la votul de noapte și la chat-ul mafiei. Rămâi ascuns!'},
+  boschetar: {name:'Boschetarul Lingvist-Literar',icon:'📚', cls:'rc-boschetar',team:null,          desc:'Noaptea mergi la cineva după o carte. Dacă mafia ucide acea persoană în aceeași noapte, afli că Don Salieri a fost acolo. Noaptea se termină după ce tu îți faci alegerea.'},
+  executor:  {name:'Executorul Lingvist-Literar', icon:'⚔️', cls:'rc-executor', team:null,          desc:'Poți scrie și trimite o cerere de eliminare în ORICE moment al nopții — o singură dată. Dacă Criticul SAU Moderatorul acceptă înainte ca Boschetarul să termine, persoana e eliminată.'},
+  locuitor:  {name:'Locuitor Literar-Pașnic',     icon:'🏡', cls:'rc-locuitor', team:null,          desc:'Participi la discuțiile din chat și la vot. Ajută la identificarea mafiei!'},
+};
+const MAFIA_ROLES=['don','sebastian','mafiot'];
+function isMafia(r){return MAFIA_ROLES.includes(r);}
+
+// Role colors for player list
+const RC={
+  critic:'#9b59b6',avocat:'#c9a84c',doctor:'#52b788',fisc:'#e67e22',
+  don:'#c0392b',sebastian:'#e74c3c',mafiot:'#e74c3c',
+  boschetar:'#f39c12',executor:'#8e44ad',locuitor:'#8a9a82',
+};
+
+// ===== STATE =====
+let ws=null;
+const S={
+  playerId:null,name:'',roomCode:'',role:null,
+  isModerator:false,players:[],phase:'lobby',dayNumber:1,
+  mafiaTeam:[],nightPhase:null,nightActionDone:false,nightTarget:null,
+  criticColors:{},myVote:null,myJudgeVote:null,
+  advocateRating:0,advocateBlocked:0,
+  defendingPlayerId:null,advocateId:null,judgePhase:false,
+  mutedThisDay:[],currentTab:'chat',
+  executorWritten:false,sebastianMode:'mafia',
+  criticAnswer:null,
+};
+let currentVotes=new Map();
+let countdownInterval=null;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('active');
+  // Re-attach tab content if switching to day
+  if(id==='s-day'){
+    const dayEl=document.getElementById('s-day');
+    const tp=document.getElementById('tab-players');
+    if(tp&&!dayEl.contains(tp)) dayEl.querySelector('.bottom-nav').before(tp);
+  }
+}
+
+function showToast(msg,dur=3500){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function genId(){return Math.random().toString(36).substr(2,9)+Date.now().toString(36);}
+
+function getWsUrl(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  return `${proto}://${location.host}`;
+}
+
+function connectWS(cb){
+  if(ws&&ws.readyState===WebSocket.OPEN){cb();return;}
+  ws=new WebSocket(getWsUrl());
+  ws.onopen=cb;
+  ws.onmessage=e=>handleMsg(JSON.parse(e.data));
+  ws.onerror=()=>showToast('Eroare de conexiune!');
+  ws.onclose=()=>{
+    ws=null;
+    if(S.phase!=='lobby'&&S.roomCode){
+      setTimeout(()=>{
+        connectWS(()=>send({type:'join_room',name:S.name,code:S.roomCode,playerId:S.playerId}));
+      },2000);
+    }
+  };
+}
+
+function send(msg){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(msg));}
+
+// ===== ACTIONS =====
+function goCreate(){showScreen('s-create');}
+function goJoin(){showScreen('s-join');}
+
+function createRoom(){
+  const name=document.getElementById('create-name').value.trim();
+  if(!name){showToast('Introdu un nume!');return;}
+  S.name=name;S.playerId=genId();S.isModerator=true;
+  connectWS(()=>send({type:'create_room',name,playerId:S.playerId}));
+}
+
+function joinRoom(){
+  const name=document.getElementById('join-name').value.trim();
+  const code=document.getElementById('join-code').value.trim();
+  if(!name){showToast('Introdu un nume!');return;}
+  if(!code){showToast('Introdu codul!');return;}
+  S.name=name;S.playerId=genId();S.isModerator=false;
+  connectWS(()=>send({type:'join_room',name,code,playerId:S.playerId}));
+}
+
+function startGame(){send({type:'start_game',playerId:S.playerId});}
+function modStartDay(){send({type:'moderator_start_day',playerId:S.playerId});}
+
+function resetGame(){
+  S.role=null;S.isModerator=false;S.players=[];S.phase='lobby';
+  showScreen('s-home');
+}
+
+// ===== ROLE BADGE (always visible) =====
+function updateRoleBadge(){
+  if(!S.role||S.isModerator)return;
+  const rd=RD[S.role]||RD.locuitor;
+  ['night','day'].forEach(scr=>{
+    const badge=document.getElementById(`rbf-${scr}`);
+    if(badge){
+      badge.style.display='flex';
+      document.getElementById(`rbf-${scr}-icon`).textContent=rd.icon;
+      document.getElementById(`rbf-${scr}-name`).textContent=rd.name;
+    }
+  });
+}
+
+// ===== ROLE REVEAL (10s countdown) =====
+function showRoleReveal(role, mafiaTeam){
+  S.role=role;S.mafiaTeam=mafiaTeam||[];
+  const rd=RD[role]||RD.locuitor;
+  const card=document.getElementById('role-reveal-card');
+  card.className=`role-reveal-card ${rd.cls}`;
+  document.getElementById('rro-icon').textContent=rd.icon;
+  document.getElementById('rro-name').textContent=rd.name;
+  document.getElementById('rro-desc').textContent=rd.desc;
+
+  const teamEl=document.getElementById('rro-team');
+  if(rd.team){
+    teamEl.style.display='inline-block';teamEl.textContent=rd.team;
+    teamEl.style.background='rgba(139,26,26,0.15)';teamEl.style.color='#e87a7a';
+    teamEl.style.border='1px solid rgba(139,26,26,0.3)';
+  } else {teamEl.style.display='none';}
+
+  const mafSec=document.getElementById('rro-mafia-team');
+  if(isMafia(role)&&mafiaTeam&&mafiaTeam.length>1){
+    mafSec.style.display='block';
+    mafSec.innerHTML=`<div style="font-family:'Playfair Display',serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red2);margin-bottom:6px;">Echipa ta</div>`+
+      mafiaTeam.filter(p=>p.id!==S.playerId).map(p=>{
+        const pr=RD[p.role]||RD.mafiot;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(30,5,5,0.5);border:1px solid rgba(192,57,43,0.3);border-radius:3px;margin-bottom:4px;">
+          <span>${pr.icon}</span>
+          <span style="flex:1;font-size:0.85rem;">${esc(p.name)}</span>
+          <span style="font-size:0.75rem;color:var(--red2);">${pr.name}</span>
+        </div>`;
+      }).join('');
+  } else {mafSec.style.display='none';}
+
+  document.getElementById('role-reveal-overlay').style.display='flex';
+
+  let secs=10;
+  document.getElementById('rro-countdown').textContent=secs;
+  clearInterval(countdownInterval);
+  countdownInterval=setInterval(()=>{
+    secs--;
+    document.getElementById('rro-countdown').textContent=secs;
+    if(secs<=0){
+      clearInterval(countdownInterval);
+      document.getElementById('role-reveal-overlay').style.display='none';
+      updateRoleBadge();
+      showNightScreen();
+    }
+  },1000);
+}
+
+// ===== MESSAGES =====
+function handleMsg(msg){
+  switch(msg.type){
+    case 'room_created':
+      S.roomCode=msg.code;S.players=msg.players;
+      document.getElementById('lm-code').textContent=msg.code;
+      updateLobbyMod();showScreen('s-lobby-mod');break;
+
+    case 'room_joined':
+    case 'room_rejoined':
+      S.roomCode=msg.code;S.players=msg.players;
+      if(msg.name)S.name=msg.name;
+      document.getElementById('lp-code').textContent=msg.code;
+      const mod=msg.players.find(p=>p.isModerator);
+      if(mod)document.getElementById('lp-mod-name').textContent=mod.name;
+      updateLobbyPlayer();showScreen('s-lobby-player');
+      buildRolesInfo();break;
+
+    case 'player_joined':
+    case 'player_left':
+      S.players=msg.players;
+      if(S.isModerator)updateLobbyMod();else updateLobbyPlayer();break;
+
+    case 'error':
+      const errs={
+        camera_negasita:'Camera nu a fost găsită!',joc_inceput:'Jocul a început deja!',
+        camera_plina:'Camera este plină (max 30)!',jucatori_insuficienti:'Minim 13 jucători!',
+        avocat_blocat:'Ești blocat de la apărare această rundă!',tinta_invalida:'Avocații nu pot fi țintă!',
+      };
+      showToast(errs[msg.message]||msg.message);break;
+
+    case 'game_started':
+      if(S.phase==='night'&&S.role!==null)break;
+      S.phase='night';S.players=msg.players;S.dayNumber=1;
+      S.nightActionDone=false;S.nightTarget=null;S.criticColors={};
+      S.executorWritten=false;
+      if(msg.role==='moderator'){
+        S.isModerator=true;S.role=null;
+        document.getElementById('nm-day').textContent=1;
+        renderNightModPlayers();showScreen('s-night-mod');
+      } else {
+        showRoleReveal(msg.role,msg.mafiaTeam);
+      }
+      break;
+
+    case 'night_started':
+      S.phase='night';S.players=msg.players;S.dayNumber=msg.dayNumber;
+      S.nightActionDone=false;S.nightTarget=null;S.executorWritten=false;
+      updateRoleBadge();
+      if(S.isModerator){
+        document.getElementById('nm-day').textContent=msg.dayNumber;
+        renderNightModPlayers();showScreen('s-night-mod');
+      } else {
+        renderNightContent({phase:'waiting',active:false});
+        showScreen('s-night-player');
+      }
+      break;
+
+    case 'night_phase':
+      S.nightPhase=msg.phase;
+      if(!S.isModerator){
+        renderNightContent(msg);
+        if(msg.phase==='executor_can_write'||S.role==='executor'){
+          // executor always sees write UI
+        }
+      } else {
+        updateNightModPhase(msg.phase);
+      }
+      break;
+
+    case 'executor_can_write':
+      if(S.role==='executor')renderExecutorWriteUI();break;
+
+    case 'night_action_confirmed':
+      S.nightActionDone=true;
+      if(S.role!=='executor')renderNightContent({phase:S.nightPhase,active:true,confirmed:true});break;
+
+    case 'critic_question':
+      renderCriticAnswerUI(msg.question);break;
+
+    case 'critic_color_update':
+      S.criticColors[msg.targetId]=msg.color;
+      if(S.phase==='day')renderVoteContent();break;
+
+    case 'executor_request':
+      renderExecutorRequest(msg);break;
+
+    case 'executor_accepted_confirmed':
+      showToast('✓ Ai acceptat cererea Executorului!',3000);break;
+
+    case 'boschetar_result':
+      if(msg.sawVisitor)showToast(`📚 Don Salieri a venit la persoana vizitată!`,7000);
+      else showToast('📚 Nimeni nu a venit. Ai venit cu o carte acasă.',4000);
+      break;
+
+    case 'day_started':
+      S.phase='day';S.players=msg.players;S.dayNumber=msg.dayNumber;
+      S.myVote=null;S.myJudgeVote=null;S.judgePhase=false;
+      S.advocateId=null;S.defendingPlayerId=null;
+      S.mutedThisDay=msg.mutedPlayers||[];
+      if(msg.criticColors)mergeCriticColors(msg.criticColors);
+      currentVotes.clear();
+      document.getElementById('role-reveal-overlay').style.display='none';
+      clearInterval(countdownInterval);
+      updateRoleBadge();
+      if(msg.mafiaKilled)showToast(`🔫 ${msg.mafiaKilled.name} a fost eliminat de Mafia Literară.`,5000);
+      else if(msg.executorKilled)showToast(`⚔️ ${msg.executorKilled.name} a fost executat.`,5000);
+      else showToast('🕯️ Orașul a dormit liniștit.',3000);
+      setTimeout(()=>showDayScreen(),1500);break;
+
+    case 'day_log':
+      addDayChatSystem(msg.message);break;
+
+    case 'day_chat':
+      addDayChat(msg.senderName,msg.message,msg.senderId===S.playerId);break;
+
+    case 'mafia_chat':
+      addMafiaChat(msg.senderName,msg.message);break;
+
+    case 'vote_update':
+      currentVotes.set(msg.voterId,msg.targetId);
+      if(S.currentTab==='vote')renderVoteContent();break;
+
+    case 'vote_tied':
+      S.players=msg.players;
+      showToast('⚖️ Vot egal — nimeni nu e eliminat.',4000);
+      if(S.currentTab==='vote')renderVoteContent();break;
+
+    case 'judge_phase':
+      S.judgePhase=true;S.defendingPlayerId=msg.defendingPlayerId;S.players=msg.players;
+      showToast(`⚖️ Judecată: ${msg.defendingPlayerName} este acuzat!`,5000);
+      document.getElementById('nav-vote-label').textContent='Judecată';
+      switchTab('vote');renderVoteContent();break;
+
+    case 'advocate_defending':
+      S.advocateId=msg.advocateId||null;
+      showToast(`⚖️ ${msg.advocateName} apără acuzatul!`,4000);
+      addDayVoteMsg(`⚖️ ${msg.advocateName}: "${msg.message}"`);
+      if(S.currentTab==='vote')renderVoteContent();break;
+
+    case 'judge_vote_update':
+      if(S.currentTab==='vote')renderVoteContent();break;
+
+    case 'player_eliminated':
+      S.players=msg.players;
+      showToast(`📖 ${msg.playerName} eliminat! (${RD[msg.role]?.name||msg.role})`,5000);
+      S.judgePhase=false;S.defendingPlayerId=null;
+      document.getElementById('nav-vote-label').textContent='Vot';
+      if(S.currentTab==='vote'||S.currentTab==='players')renderVoteContent();
+      renderPlayersTab();break;
+
+    case 'player_spared':
+      showToast(`✅ Acuzatul a fost iertat!`,4000);
+      S.judgePhase=false;S.defendingPlayerId=null;
+      document.getElementById('nav-vote-label').textContent='Vot';
+      if(S.currentTab==='vote')renderVoteContent();break;
+
+    case 'game_ended':
+      showEndScreen(msg.winner,msg.players,msg.bestAdvocate);break;
+  }
+}
+
+function mergeCriticColors(cc){
+  if(S.role==='critic'){
+    Object.values(cc).forEach(map=>{
+      Object.entries(map).forEach(([tid,color])=>{S.criticColors[tid]=color;});
+    });
+  }
+}
+
+// ===== LOBBY =====
+function updateLobbyMod(){
+  const nonMod=S.players.filter(p=>!p.isModerator);
+  document.getElementById('lm-count').textContent=`${nonMod.length} jucători`;
+  document.getElementById('lm-players').innerHTML=nonMod.map(p=>`
+    <div class="player-item">
+      <div class="p-avatar">${esc(p.name[0].toUpperCase())}</div>
+      <div class="p-name">${esc(p.name)}</div>
+    </div>`).join('');
+  const btn=document.getElementById('lm-start-btn');
+  if(btn)btn.disabled=nonMod.length<13;
+  const hint=document.getElementById('lm-hint');
+  if(hint)hint.textContent=nonMod.length<13?`Mai sunt necesari ${13-nonMod.length} jucători.`:'Poți începe jocul!';
+}
+
+function updateLobbyPlayer(){
+  const nonMod=S.players.filter(p=>!p.isModerator);
+  const el=document.getElementById('lp-count-display');
+  if(el)el.textContent=`${nonMod.length} jucători conectați`;
+  const cnt=document.getElementById('lp-count');
+  if(cnt)cnt.textContent=nonMod.length+' jucători';
+}
+
+function buildRolesInfo(){
+  const container=document.getElementById('roles-info-list');
+  if(!container)return;
+  container.innerHTML=Object.entries(RD).map(([key,rd])=>`
+    <div class="role-info-card">
+      <span class="ri-icon">${rd.icon}</span>
+      <div>
+        <div class="ri-name">${rd.name}</div>
+        <div class="ri-desc">${rd.desc}</div>
+        ${rd.team?`<div class="ri-team">⚔ ${rd.team}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ===== NIGHT =====
+const PHASE_NAMES={
+  doctor:'Doctorul Lingvist-Literar acționează',
+  fisc:'Fiscul Lingvist-Literar acționează',
+  critic:'Criticul Lingvist-Literar trimite întrebarea',
+  mafia:'Mafia Literară votează',
+  boschetar:'Boschetarul Lingvist-Literar — ultima fază',
+  waiting:'Stai liniștit...',
+};
+
+function showNightScreen(){
+  if(S.isModerator){renderNightModPlayers();showScreen('s-night-mod');}
+  else{renderNightContent({phase:'waiting',active:false});showScreen('s-night-player');}
+}
+
+function updateNightModPhase(phase){
+  const el=document.getElementById('nm-phase-name');
+  if(el)el.textContent=PHASE_NAMES[phase]||phase;
+}
+
+function renderNightModPlayers(){
+  const container=document.getElementById('nm-players');
+  container.innerHTML=S.players.filter(p=>!p.isModerator).map(p=>`
+    <div class="player-item ${!p.alive?'dead':''}">
+      <div class="p-avatar" style="border-color:${RC[p.role]||'var(--border)'}">${p.alive?(RD[p.role]?.icon||'?'):'💀'}</div>
+      <div class="p-name">${esc(p.name)}</div>
+      <span class="p-role-tag" style="color:${RC[p.role]||'var(--muted)'};">${RD[p.role]?.name||p.role||''}</span>
+    </div>`).join('');
+}
+
+function renderNightContent(msg){
+  const content=document.getElementById('np-content');
+  const sub=document.getElementById('np-phase-sub');
+  const role=S.role;
+  const phase=msg.phase;
+  const isActive=msg.active;
+  const confirmed=msg.confirmed;
+
+  sub.textContent=isActive?(PHASE_NAMES[phase]||'Rândul tău!'):'Stai liniștit...';
+
+  if(confirmed&&phase!=='mafia'){
+    content.innerHTML=`<div class="status s-success" style="margin:14px 0;">✓ Acțiunea a fost trimisă! Așteaptă.</div>
+    ${role==='executor'?renderExecutorUIHTML():''}`;
+    return;
+  }
+  if(!isActive){
+    content.innerHTML=`<div class="night-phase-box">
+      <div class="night-phase-name">${PHASE_NAMES[phase]||'...'}</div>
+      <div class="night-waiting">Stai liniștit și observă...</div>
+    </div>
+    ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
+    return;
+  }
+
+  const alive=S.players.filter(p=>p.alive&&!p.isModerator&&p.id!==S.playerId&&p.role!=='avocat');
+  const allAlive=S.players.filter(p=>p.alive&&!p.isModerator&&p.role!=='avocat');
+
+  if(role==='doctor'&&phase==='doctor'){
+    content.innerHTML=`<div class="sec-label">Salvează un jucător</div>
+      <div class="target-grid">${allAlive.map(p=>`
+        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('doctor_save','${p.id}')">
+          ${esc(p.name)}${p.id===S.playerId?' (Tu)':''}
+        </button>`).join('')}</div>`;
+  } else if(role==='fisc'&&phase==='fisc'){
+    content.innerHTML=`<div class="sec-label">Blochează un jucător</div>
+      <div class="target-grid">${alive.map(p=>`
+        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('fisc_mute','${p.id}')">
+          ${esc(p.name)}
+        </button>`).join('')}</div>`;
+  } else if(role==='critic'&&phase==='critic'){
+    content.innerHTML=`
+      <div class="sec-label">Trimite o întrebare DA/NU</div>
+      <div class="field"><label>Jucătorul</label>
+        <select id="critic-target" style="width:100%;padding:11px;background:rgba(8,20,10,0.9);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:'EB Garamond',serif;font-size:0.95rem;">
+          <option value="">-- Selectează --</option>
+          ${alive.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Întrebarea (răspuns DA sau NU)</label>
+        <textarea id="critic-question" rows="3" placeholder="Scrie întrebarea..."></textarea>
+      </div>
+      <div class="field"><label>Răspunsul corect</label>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" id="ans-da" onclick="setCriticAns('DA')" style="flex:1;">DA</button>
+          <button class="btn btn-ghost btn-sm" id="ans-nu" onclick="setCriticAns('NU')" style="flex:1;">NU</button>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="sendCriticQ()">Trimite întrebarea</button>`;
+    S.criticAnswer=null;
+  } else if(isMafia(role)&&phase==='mafia'){
+    content.innerHTML=`
+      <div class="sec-label">Votul mafiei — alege victima</div>
+      <div class="target-grid">${alive.map(p=>`
+        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('mafia_kill','${p.id}')">
+          ${esc(p.name)}
+        </button>`).join('')}</div>
+      ${role==='sebastian'?`
+      <div class="divider"></div>
+      <div class="sec-label">Acțiunea Sebastian (opțional)</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn btn-ghost btn-sm" id="seb-m" onclick="setSeb('mafia')" style="flex:1;">🎩 Protejează mafiot</button>
+        <button class="btn btn-ghost btn-sm" id="seb-o" onclick="setSeb('outsider')" style="flex:1;">🎭 Sabotează cetățean</button>
+      </div>
+      <div class="target-grid" id="seb-grid">${alive.map(p=>`<button class="target-btn" onclick="doSeb('${p.id}')">${esc(p.name)}</button>`).join('')}</div>`:''}
+      ${renderMafiaChatHTML()}
+      ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
+  } else if(role==='boschetar'&&phase==='boschetar'){
+    content.innerHTML=`
+      <div class="status s-warn" style="margin-bottom:10px;">⚠️ Noaptea se termină după ce tu alegi!</div>
+      <div class="sec-label">Mergi la cineva după o carte</div>
+      <div class="target-grid">${alive.map(p=>`
+        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('boschetar_visit','${p.id}')">
+          ${esc(p.name)}
+        </button>`).join('')}</div>`;
+  } else if(role==='executor'){
+    content.innerHTML=renderExecutorUIHTML();
+  } else {
+    content.innerHTML=`<div class="night-phase-box">
+      <div class="night-phase-name">${PHASE_NAMES[phase]||'Stai liniștit'}</div>
+      <div class="night-waiting">Nu ai acțiuni în această fază.</div>
+    </div>
+    ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
+  }
+}
+
+function renderExecutorUIHTML(){
+  if(S.executorWritten) return `<div class="status s-success" style="margin-top:10px;">⚔️ Cerere trimisă! Aștepți răspunsul.</div>`;
+  const alive=S.players.filter(p=>p.alive&&!p.isModerator&&p.id!==S.playerId&&p.role!=='avocat');
+  return `<div class="divider"></div>
+    <div class="sec-label">⚔️ Executorul — trimite cererea (oricând)</div>
+    <div class="field"><label>Persoana de eliminat</label>
+      <select id="exec-target" style="width:100%;padding:11px;background:rgba(8,20,10,0.9);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:'EB Garamond',serif;font-size:0.95rem;">
+        <option value="">-- Selectează --</option>
+        ${alive.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Argumentul tău</label>
+      <textarea id="exec-msg" rows="3" placeholder="Argumentează de ce..."></textarea>
+    </div>
+    <button class="btn btn-bordo btn-sm" onclick="sendExecutorReq()">⚔ Trimite cererea</button>`;
+}
+
+function renderExecutorWriteUI(){
+  const content=document.getElementById('np-content');
+  if(content&&!S.executorWritten){
+    content.innerHTML=renderExecutorUIHTML();
+    showScreen('s-night-player');
+  }
+}
+
+function sendExecutorReq(){
+  const t=document.getElementById('exec-target');
+  const m=document.getElementById('exec-msg');
+  if(!t||!t.value){showToast('Selectează o persoană!');return;}
+  S.executorWritten=true;
+  send({type:'night_action',action:'executor_write',playerId:S.playerId,targetId:t.value,message:m?m.value:''});
+  showToast('Cerere trimisă la Critic și Moderator!',4000);
+  const content=document.getElementById('np-content');
+  if(content){
+    const execSection=content.querySelector('#exec-target');
+    if(execSection){execSection.closest('.field')?.remove();}
+  }
+  renderNightContent({phase:S.nightPhase,active:false});
+}
+
+function renderExecutorRequest(msg){
+  const html=`<div class="card" style="border-color:rgba(142,68,173,0.4);margin-top:10px;">
+    <div class="card-title">⚔ Cerere Executor</div>
+    <p style="margin-bottom:5px;font-size:0.9rem;"><strong>${esc(msg.targetName)}</strong> trebuie eliminat:</p>
+    <p style="font-style:italic;color:var(--muted);font-size:0.85rem;margin-bottom:10px;">"${esc(msg.message)}"</p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-red btn-sm" onclick="respondExec(true)" style="flex:1;">✓ Accept</button>
+      <button class="btn btn-ghost btn-sm" onclick="respondExec(false)" style="flex:1;">✗ Refuz</button>
+    </div>
+  </div>`;
+  if(S.isModerator){
+    const sec=document.getElementById('nm-executor-section');
+    if(sec)sec.innerHTML=html;
+  } else if(S.role==='critic'){
+    const c=document.getElementById('np-content');
+    if(c)c.insertAdjacentHTML('afterbegin',html);
+  }
+}
+
+function respondExec(accept){
+  send({type:'night_action',action:accept?'executor_accept':'executor_reject',playerId:S.playerId});
+  showToast(accept?'Ai acceptat cererea!':'Ai refuzat cererea.',3000);
+}
+
+function renderCriticAnswerUI(question){
+  const content=document.getElementById('np-content');
+  content.innerHTML=`<div class="card">
+    <div class="card-title">📝 Întrebare de la Critic</div>
+    <p style="font-size:1rem;line-height:1.5;margin-bottom:14px;">${esc(question)}</p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-gold" onclick="answerCritic('DA')" style="flex:1;">DA</button>
+      <button class="btn btn-outline" onclick="answerCritic('NU')" style="flex:1;">NU</button>
+    </div>
+  </div>`;
+  document.getElementById('np-phase-sub').textContent='Răspunde la întrebarea Criticului!';
+  showScreen('s-night-player');
+}
+
+function answerCritic(answer){
+  send({type:'night_action',action:'critic_answer',playerId:S.playerId,targetId:S.playerId,answer});
+  showToast(`Ai răspuns: ${answer}`,3000);
+  document.getElementById('np-content').innerHTML=`<div class="status s-success">✓ Ai răspuns cu ${answer}!</div>`;
+}
+
+function renderMafiaChatHTML(){
+  return `<div style="height:155px;display:flex;flex-direction:column;border:1px solid rgba(139,26,26,0.3);border-radius:5px;overflow:hidden;margin-top:10px;background:rgba(10,5,5,0.7);">
+    <div style="padding:5px 11px;background:rgba(139,26,26,0.15);font-family:'Playfair Display',serif;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red2);border-bottom:1px solid rgba(139,26,26,0.2);">🔫 Chat Mafie</div>
+    <div id="mafia-chat-msgs" style="flex:1;overflow-y:auto;padding:6px 11px;display:flex;flex-direction:column;gap:3px;"></div>
+    <div style="display:flex;border-top:1px solid rgba(139,26,26,0.2);">
+      <input id="mafia-chat-in" style="flex:1;padding:7px 11px;background:transparent;border:none;color:var(--text);font-family:'EB Garamond',serif;font-size:0.9rem;outline:none;" placeholder="Mesaj mafie..." onkeydown="if(event.key==='Enter')sendMafiaChat()">
+      <button onclick="sendMafiaChat()" style="padding:7px 11px;background:rgba(139,26,26,0.2);border:none;color:var(--red2);cursor:pointer;">➤</button>
+    </div>
+  </div>`;
+}
+
+function sendMafiaChat(){
+  const inp=document.getElementById('mafia-chat-in');
+  if(!inp||!inp.value.trim())return;
+  send({type:'mafia_chat',playerId:S.playerId,message:inp.value.trim()});
+  inp.value='';
+}
+
+function addMafiaChat(sender,message){
+  const c=document.getElementById('mafia-chat-msgs');
+  if(!c)return;
+  const d=document.createElement('div');
+  d.style.cssText='font-size:0.82rem;line-height:1.4;';
+  d.innerHTML=`<span style="color:var(--red2);font-weight:600;">${esc(sender)}:</span> ${esc(message)}`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+
+function doNightAction(action,targetId){
+  S.nightTarget=targetId;
+  send({type:'night_action',action,playerId:S.playerId,targetId});
+  document.querySelectorAll('#np-content .target-btn').forEach(b=>b.classList.remove('sel'));
+  const btns=document.querySelectorAll(`#np-content .target-btn`);
+  btns.forEach(b=>{if(b.getAttribute('onclick')?.includes(targetId))b.classList.add('sel');});
+}
+
+function setCriticAns(ans){
+  S.criticAnswer=ans;
+  const da=document.getElementById('ans-da');
+  const nu=document.getElementById('ans-nu');
+  if(da){da.style.background=ans==='DA'?'var(--gold)':'';da.style.color=ans==='DA'?'#080e05':'';}
+  if(nu){nu.style.background=ans==='NU'?'var(--gold)':'';nu.style.color=ans==='NU'?'#080e05':'';}
+}
+
+function sendCriticQ(){
+  const t=document.getElementById('critic-target');
+  const q=document.getElementById('critic-question');
+  if(!t?.value){showToast('Selectează un jucător!');return;}
+  if(!q?.value.trim()){showToast('Scrie o întrebare!');return;}
+  if(!S.criticAnswer){showToast('Selectează răspunsul corect!');return;}
+  send({type:'night_action',action:'critic_send_question',playerId:S.playerId,targetId:t.value,question:q.value.trim(),correctAnswer:S.criticAnswer});
+}
+
+function setSeb(mode){
+  S.sebastianMode=mode;
+  const mafia=S.players.filter(p=>p.alive&&!p.isModerator&&isMafia(p.role)&&p.id!==S.playerId);
+  const others=S.players.filter(p=>p.alive&&!p.isModerator&&!isMafia(p.role)&&p.role!=='avocat');
+  const targets=mode==='mafia'?mafia:others;
+  const grid=document.getElementById('seb-grid');
+  if(grid)grid.innerHTML=targets.map(p=>`<button class="target-btn" onclick="doSeb('${p.id}')">${esc(p.name)}</button>`).join('');
+  document.getElementById('seb-m').style.background=mode==='mafia'?'var(--gold)':'';
+  document.getElementById('seb-m').style.color=mode==='mafia'?'#080e05':'';
+  document.getElementById('seb-o').style.background=mode==='outsider'?'var(--gold)':'';
+  document.getElementById('seb-o').style.color=mode==='outsider'?'#080e05':'';
+}
+
+function doSeb(targetId){
+  send({type:'night_action',action:'sebastian_action',playerId:S.playerId,targetId,forMafia:S.sebastianMode==='mafia'});
+  showToast('Acțiune Sebastian trimisă!',3000);
+}
+
+// ===== DAY =====
+const dayVoteMsgs=[];
+
+function showDayScreen(){
+  document.getElementById('day-num').textContent=S.dayNumber;
+  dayVoteMsgs.length=0;
+  S.currentTab='chat';
+  switchTab('chat');
+  if(S.isModerator)document.getElementById('day-sub').textContent='Moderezi ziua '+S.dayNumber;
+  showScreen('s-day');
+  renderPlayersTab();
+  // Add night log to chat
+  if(S.players){
+    // logs come via day_log messages
+  }
+}
+
+function switchTab(tab){
+  S.currentTab=tab;
+  document.getElementById('tab-chat').style.display=tab==='chat'?'flex':'none';
+  document.getElementById('tab-vote').style.display=tab==='vote'?'block':'none';
+  document.getElementById('tab-players').style.display=tab==='players'?'block':'none';
+  ['chat','vote','players'].forEach(t=>{
+    const btn=document.getElementById(`nav-${t}-btn`);
+    if(btn)btn.classList.toggle('active',t===tab);
+  });
+  if(tab==='vote')renderVoteContent();
+  if(tab==='players')renderPlayersTab();
+}
+
+function addDayChatSystem(msg){
+  const c=document.getElementById('day-chat-msgs');
+  if(!c)return;
+  const d=document.createElement('div');d.className='chat-msg system';d.textContent=msg;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+
+function addDayChat(sender,message,isSelf){
+  const c=document.getElementById('day-chat-msgs');
+  if(!c)return;
+  const d=document.createElement('div');d.className='chat-msg';
+  d.innerHTML=`<span class="sender">${esc(sender)}:</span> ${esc(message)}`;
+  if(isSelf)d.style.opacity='0.85';
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+
+function addDayVoteMsg(msg){
+  dayVoteMsgs.push(msg);
+  if(S.currentTab==='vote')renderVoteContent();
+}
+
+function sendDayChat(){
+  const inp=document.getElementById('day-chat-in');
+  if(!inp||!inp.value.trim())return;
+  const me=S.players.find(p=>p.id===S.playerId);
+  if(!me||!me.alive){showToast('Ești eliminat!');return;}
+  if(S.mutedThisDay.includes(S.playerId)){showToast('🏛️ Fiscul te-a blocat!');return;}
+  send({type:'day_chat',playerId:S.playerId,message:inp.value.trim()});
+  inp.value='';
+}
+
+function renderPlayersTab(){
+  const container=document.getElementById('tab-players');
+  if(!container)return;
+  // Show ALL players - alive normal, dead red, avocati gold
+  const allPlayers=S.players.filter(p=>!p.isModerator);
+  container.innerHTML=`<div class="sec-label" style="padding:12px 0 6px;">Toți jucătorii</div>`+
+    allPlayers.map(p=>{
+      const isAvocat=p.role==='avocat';
+      const isDead=!p.alive;
+      let cls='player-item';
+      if(isDead)cls+=' dead';
+      if(isAvocat&&!isDead)cls+=' avocat-item';
+      const icon=isDead?'💀':(RD[p.role]?.icon||'👤');
+      const color=isDead?'var(--red2)':(isAvocat?'var(--gold)':'var(--border)');
+      let badge='';
+      if(isDead)badge=`<span class="p-badge badge-dead">Eliminat</span>`;
+      else if(isAvocat)badge=`<span class="p-badge badge-avocat">Avocat</span>`;
+      else if(p.id===S.playerId)badge=`<span class="p-badge badge-you">Tu</span>`;
+      // Moderator sees role of everyone
+      const roleTag=S.isModerator?`<span class="p-role-tag" style="color:${RC[p.role]||'var(--muted)'};">${RD[p.role]?.name||''}</span>`:'';
+      return `<div class="${cls}">
+        <div class="p-avatar" style="border-color:${color}">${icon}</div>
+        <div class="p-name">${esc(p.name)}</div>
+        ${roleTag}${badge}
+      </div>`;
+    }).join('');
+}
+
+function renderVoteContent(){
+  const container=document.getElementById('vote-content');
+  if(!container)return;
+  const me=S.players.find(p=>p.id===S.playerId);
+  const alive=S.players.filter(p=>p.alive&&!p.isModerator);
+  const isMuted=S.mutedThisDay.includes(S.playerId);
+  const isMod=S.isModerator;
+  const isAvocat=S.role==='avocat';
+  let html='';
+
+  // Advocate messages
+  if(dayVoteMsgs.length>0){
+    html+=`<div class="card" style="margin-bottom:9px;">`+
+      dayVoteMsgs.map(m=>`<p style="font-style:italic;font-size:0.88rem;color:var(--gold);margin-bottom:3px;">${esc(m)}</p>`).join('')+
+      `</div>`;
+  }
+
+  if(S.judgePhase){
+    const defending=S.players.find(p=>p.id===S.defendingPlayerId);
+    html+=`<div class="status s-warn" style="margin-bottom:9px;">⚖️ Judecată: <strong>${defending?esc(defending.name):'?'}</strong> este acuzat!</div>`;
+
+    // Advocate defend button - show if no advocate yet and current player is avocat
+    if(!S.advocateId&&isAvocat&&me&&me.alive){
+      html+=`<div class="field"><label>Mesajul tău de apărare</label>
+        <textarea id="advocate-msg" rows="3" placeholder="Argumentează apărarea..."></textarea>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="pressDefend()" style="margin-bottom:10px;">⚖️ Apără acuzatul</button>`;
+    }
+    if(S.advocateId){
+      html+=`<div class="status s-info" style="margin-bottom:9px;">Un avocat apără acuzatul.</div>`;
+    }
+
+    // Judge votes
+    const canVote=((me&&me.alive&&!isMuted&&!isAvocat)||isMod);
+    if(canVote){
+      html+=`<div class="sec-label" style="margin-top:10px;">Votul tău</div>
+        <div class="judge-btns">
+          <button class="judge-btn judge-elim ${S.myJudgeVote==='like'?'voted':''}" onclick="castJudgeVote('like')">👎 Elimină</button>
+          <button class="judge-btn judge-spare ${S.myJudgeVote==='dislike'?'voted':''}" onclick="castJudgeVote('dislike')">👍 Iartă</button>
+        </div>`;
+    }
+    if(isMod){
+      html+=`<button class="btn btn-ghost btn-sm" onclick="modResolveJudge()" style="margin-top:8px;">⚖ Finalizează judecata</button>`;
+    }
+  } else {
+    // Normal vote phase
+    if(!me||!me.alive){
+      html+=`<div class="status s-warn">Ești eliminat. Spectator.</div>`;
+    } else if(isAvocat){
+      html+=`<div class="status s-info">⚖️ Ești Avocat — nu participi la vot.</div>`;
+    } else if(isMuted){
+      html+=`<div class="status s-danger">🏛️ Fiscul te-a blocat — nu poți vota azi!</div>`;
+    } else {
+      html+=`<div class="sec-label">Votează pentru eliminare</div>
+        <div class="target-grid">
+          ${alive.filter(p=>p.id!==S.playerId&&p.role!=='avocat').map(p=>{
+            const color=S.role==='critic'&&S.criticColors[p.id];
+            const cls=color?`critic-${color}`:'';
+            return `<button class="target-btn ${S.myVote===p.id?'voted':''} ${cls}" onclick="castVote('${p.id}')">
+              ${esc(p.name)}
+            </button>`;
+          }).join('')}
+        </div>`;
+    }
+    if(isMod){
+      html+=`<div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-red btn-sm" onclick="modResolveVote()" style="flex:1;">⚖ Finalizează votul</button>
+        <button class="btn btn-ghost btn-sm" onclick="modStartNight()" style="flex:1;">🌙 Noapte</button>
+      </div>`;
+    }
+    if(currentVotes.size>0){
+      const tc=new Map();
+      currentVotes.forEach(tid=>{if(tid)tc.set(tid,(tc.get(tid)||0)+1);});
+      html+=`<div class="vote-tally" style="margin-top:10px;">
+        ${alive.filter(p=>p.role!=='avocat').map(p=>{
+          const v=tc.get(p.id)||0;
+          const pct=alive.length>0?(v/alive.length)*100:0;
+          return `<div class="v-row">
+            <span style="min-width:65px;font-size:0.82rem;">${esc(p.name)}</span>
+            <div class="v-bar-bg"><div class="v-bar" style="width:${pct}%"></div></div>
+            <span class="v-count">${v}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+  }
+  container.innerHTML=html;
+}
+
+function castVote(targetId){
+  const me=S.players.find(p=>p.id===S.playerId);
+  if(!me||!me.alive||S.mutedThisDay.includes(S.playerId))return;
+  S.myVote=targetId;
+  send({type:'vote',playerId:S.playerId,targetId});
+  renderVoteContent();
+}
+
+function pressDefend(){
+  const msgEl=document.getElementById('advocate-msg');
+  send({type:'advocate_defend',playerId:S.playerId,message:msgEl?msgEl.value.trim():''});
+}
+
+function castJudgeVote(vote){
+  S.myJudgeVote=vote;
+  send({type:'judge_vote',playerId:S.playerId,vote});
+  renderVoteContent();
+}
+
+function modResolveVote(){send({type:'moderator_resolve_vote',playerId:S.playerId});}
+function modResolveJudge(){send({type:'moderator_resolve_judge',playerId:S.playerId});}
+function modStartNight(){send({type:'moderator_start_night',playerId:S.playerId});}
+
+// ===== END =====
+function showEndScreen(winner,players,bestAdvocate){
+  document.getElementById('role-reveal-overlay').style.display='none';
+  clearInterval(countdownInterval);
+  document.getElementById('end-icon').textContent=winner==='mafia'?'🔫':'📚';
+  document.getElementById('end-title').textContent=winner==='mafia'?'Mafia Literară a câștigat!':'Cetățenii au câștigat!';
+  document.getElementById('end-title').className=`winner-title ${winner==='mafia'?'w-mafia':'w-citizens'}`;
+  document.getElementById('end-sub').textContent=winner==='mafia'?'Mafia a eliminat toți cetățenii.':'Cetățenii au identificat toată mafia.';
+  if(bestAdvocate){
+    document.getElementById('end-advocate').style.display='block';
+    document.getElementById('end-advocate-name').textContent=bestAdvocate.name;
+    document.getElementById('end-advocate-rating').textContent=`Rating: ${bestAdvocate.advocateRating.toFixed(2)} puncte`;
+  }
+  document.getElementById('end-players').innerHTML=(players||[]).map(p=>{
+    const rd=RD[p.role]||RD.locuitor;
+    const color=RC[p.role]||'var(--muted)';
+    return `<div class="player-item ${!p.alive?'dead':''}">
+      <div class="p-avatar" style="border-color:${color}">${rd.icon}</div>
+      <div class="p-name">${esc(p.name)}</div>
+      <span style="color:${color};font-size:0.78rem;font-family:'Playfair Display',serif;">${rd.name}</span>
+    </div>`;
+  }).join('');
+  showScreen('s-end');
+}
+</script>
+</body>
+</html>
