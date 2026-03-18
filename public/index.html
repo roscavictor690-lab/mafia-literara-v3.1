@@ -621,6 +621,7 @@ const S={
   executorWritten:false,sebastianMode:'mafia',
   criticAnswer:null,
   moderatorPlayers:null, // full player list with roles for moderator only
+  isActiveAdvocate:false, // this player is the active defending advocate
 };
 let currentVotes=new Map();
 let countdownInterval=null;
@@ -868,6 +869,11 @@ function handleMsg(msg){
       showToast(msg.accepted?'⚔️ Cererea a fost acceptată!':'⚔️ Cererea a fost refuzată.',3000);
       break;
 
+    case 'boschetar_done':
+      // Moderator: boschetarul si-a facut treaba
+      showToast('📚 Boschetarul și-a terminat vizita. Poți trece la zi!',5000);
+      break;
+
     case 'boschetar_result':
       if(msg.sawVisitor)showToast(`📚 Don Salieri a venit la persoana vizitată!`,7000);
       else showToast('📚 Nimeni nu a venit. Ai venit cu o carte acasă.',4000);
@@ -876,7 +882,7 @@ function handleMsg(msg){
     case 'day_started':
       S.phase='day';S.players=msg.players;S.dayNumber=msg.dayNumber;
       S.myVote=null;S.myJudgeVote=null;S.judgePhase=false;
-      S.advocateId=null;S.defendingPlayerId=null;
+      S.advocateId=null;S.defendingPlayerId=null;S.isActiveAdvocate=false;
       S.mutedThisDay=msg.mutedPlayers||[];
       if(msg.criticColors)mergeCriticColors(msg.criticColors);
       currentVotes.clear();
@@ -914,9 +920,22 @@ function handleMsg(msg){
 
     case 'advocate_defending':
       S.advocateId=msg.advocateId||null;
-      showToast(`⚖️ ${msg.advocateName} apără acuzatul!`,4000);
-      addDayVoteMsg(`⚖️ ${msg.advocateName}: "${msg.message}"`);
-      if(S.currentTab==='vote')renderVoteContent();break;
+      showToast(`⚖️ ${msg.advocateName} a preluat apărarea!`,4000);
+      if(S.currentTab==='vote')renderVoteContent();
+      // Switch all to vote tab to see advocate defense
+      switchTab('vote');
+      break;
+
+    case 'advocate_got_floor':
+      // This advocate now has the chat floor - show defense chat
+      S.isActiveAdvocate=true;
+      renderVoteContent();
+      break;
+
+    case 'advocate_chat':
+      // Add advocate defense message to vote tab chat
+      addAdvocateMessage(msg.advocateName, msg.message);
+      break;
 
     case 'judge_vote_update':
       if(S.currentTab==='vote')renderVoteContent();break;
@@ -996,8 +1015,14 @@ const PHASE_NAMES={
 };
 
 function showNightScreen(){
-  if(S.isModerator){renderNightModPlayers();showScreen('s-night-mod');}
-  else{renderNightContent({phase:'waiting',active:false});showScreen('s-night-player');}
+  if(S.isModerator){
+    renderNightModPlayers();
+    showScreen('s-night-mod');
+  } else {
+    // Render night content immediately based on role (parallel night)
+    renderNightContent({phase:'active',active:true,role:S.role});
+    showScreen('s-night-player');
+  }
 }
 
 function updateNightModPhase(phase){
@@ -1019,45 +1044,45 @@ function renderNightModPlayers(){
 function renderNightContent(msg){
   const content=document.getElementById('np-content');
   const sub=document.getElementById('np-phase-sub');
+  if(!content) return;
   const role=S.role;
-  const phase=msg.phase;
-  const isActive=msg.active;
   const confirmed=msg.confirmed;
 
-  sub.textContent=isActive?(PHASE_NAMES[phase]||'Rândul tău!'):'Stai liniștit...';
+  // Always show executor write UI if executor and not written yet
+  const executorExtra=(role==='executor'&&!S.executorWritten)?renderExecutorUIHTML():'';
 
-  if(confirmed&&phase!=='mafia'){
-    content.innerHTML=`<div class="status s-success" style="margin:14px 0;">✓ Acțiunea a fost trimisă! Așteaptă.</div>
-    ${role==='executor'?renderExecutorUIHTML():''}`;
-    return;
-  }
-  if(!isActive){
-    content.innerHTML=`<div class="night-phase-box">
-      <div class="night-phase-name">${PHASE_NAMES[phase]||'...'}</div>
-      <div class="night-waiting">Stai liniștit și observă...</div>
-    </div>
-    ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
+  if(confirmed){
+    sub.textContent='Acțiunea ta a fost trimisă!';
+    content.innerHTML=`<div class="status s-success" style="margin:14px 0;">✓ Acțiunea a fost trimisă! Așteaptă moderatorul să treacă la zi.</div>${executorExtra}`;
     return;
   }
 
+  // Render based on role - all parallel
   const alive=S.players.filter(p=>p.alive&&!p.isModerator&&p.id!==S.playerId&&p.role!=='avocat');
   const allAlive=S.players.filter(p=>p.alive&&!p.isModerator&&p.role!=='avocat');
 
-  if(role==='doctor'&&phase==='doctor'){
-    content.innerHTML=`<div class="sec-label">Salvează un jucător</div>
+  sub.textContent='Noaptea — fă-ți acțiunea!';
+
+  if(role==='doctor'){
+    sub.textContent='Salvează un jucător';
+    content.innerHTML=`<div class="sec-label">Salvează un jucător această noapte</div>
       <div class="target-grid">${allAlive.map(p=>`
         <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('doctor_save','${p.id}')">
           ${esc(p.name)}${p.id===S.playerId?' (Tu)':''}
         </button>`).join('')}</div>`;
-  } else if(role==='fisc'&&phase==='fisc'){
-    content.innerHTML=`<div class="sec-label">Blochează un jucător</div>
+
+  } else if(role==='fisc'){
+    sub.textContent='Blochează un jucător';
+    content.innerHTML=`<div class="sec-label">Blochează un jucător această noapte</div>
       <div class="target-grid">${alive.map(p=>`
         <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('fisc_mute','${p.id}')">
           ${esc(p.name)}
         </button>`).join('')}</div>`;
-  } else if(role==='critic'&&phase==='critic'){
+
+  } else if(role==='critic'){
+    sub.textContent='Trimite o întrebare DA/NU';
     content.innerHTML=`
-      <div class="sec-label">Trimite o întrebare DA/NU</div>
+      <div class="sec-label">Trimite o întrebare DA/NU unui jucător</div>
       <div class="field"><label>Jucătorul</label>
         <select id="critic-target" style="width:100%;padding:11px;background:rgba(8,20,10,0.9);border:1px solid var(--border);color:var(--text);border-radius:3px;font-family:'EB Garamond',serif;font-size:0.95rem;">
           <option value="">-- Selectează --</option>
@@ -1075,9 +1100,11 @@ function renderNightContent(msg){
       </div>
       <button class="btn btn-gold" onclick="sendCriticQ()">Trimite întrebarea</button>`;
     S.criticAnswer=null;
-  } else if(isMafia(role)&&phase==='mafia'){
+
+  } else if(isMafia(role)){
+    sub.textContent='Votul mafiei';
     content.innerHTML=`
-      <div class="sec-label">Votul mafiei — alege victima</div>
+      <div class="sec-label">Alege victima nopții</div>
       <div class="target-grid">${alive.map(p=>`
         <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('mafia_kill','${p.id}')">
           ${esc(p.name)}
@@ -1090,24 +1117,35 @@ function renderNightContent(msg){
         <button class="btn btn-ghost btn-sm" id="seb-o" onclick="setSeb('outsider')" style="flex:1;">🎭 Sabotează cetățean</button>
       </div>
       <div class="target-grid" id="seb-grid">${alive.map(p=>`<button class="target-btn" onclick="doSeb('${p.id}')">${esc(p.name)}</button>`).join('')}</div>`:''}
-      ${renderMafiaChatHTML()}
-      ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
-  } else if(role==='boschetar'&&phase==='boschetar'){
+      ${renderMafiaChatHTML()}`;
+
+  } else if(role==='boschetar'){
+    sub.textContent='Mergi la cineva după o carte';
     content.innerHTML=`
-      <div class="status s-warn" style="margin-bottom:10px;">⚠️ Noaptea se termină după ce tu alegi!</div>
       <div class="sec-label">Mergi la cineva după o carte</div>
       <div class="target-grid">${alive.map(p=>`
         <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('boschetar_visit','${p.id}')">
           ${esc(p.name)}
-        </button>`).join('')}</div>`;
+        </button>`).join('')}</div>
+      ${executorExtra}`;
+
   } else if(role==='executor'){
+    sub.textContent='Trimite cererea de eliminare';
     content.innerHTML=renderExecutorUIHTML();
-  } else {
+
+  } else if(role==='locuitor'||role==='avocat'){
+    sub.textContent='Dormi liniștit...';
     content.innerHTML=`<div class="night-phase-box">
-      <div class="night-phase-name">${PHASE_NAMES[phase]||'Stai liniștit'}</div>
-      <div class="night-waiting">Nu ai acțiuni în această fază.</div>
-    </div>
-    ${role==='executor'&&!S.executorWritten?renderExecutorUIHTML():''}`;
+      <div class="night-phase-name">🌙 Noaptea</div>
+      <div class="night-waiting">Nu ai acțiuni nocturne. Stai liniștit!</div>
+    </div>`;
+
+  } else {
+    sub.textContent='Stai liniștit...';
+    content.innerHTML=`<div class="night-phase-box">
+      <div class="night-phase-name">🌙 Noaptea</div>
+      <div class="night-waiting">Stai liniștit și observă...</div>
+    </div>${executorExtra}`;
   }
 }
 
@@ -1316,6 +1354,16 @@ function addDayVoteMsg(msg){
   if(S.currentTab==='vote')renderVoteContent();
 }
 
+function addAdvocateMessage(name, message){
+  const container=document.getElementById('advocate-chat-msgs');
+  if(!container)return;
+  const d=document.createElement('div');
+  d.className='chat-msg';
+  d.innerHTML=`<span class="sender" style="color:var(--gold2);">⚖️ ${esc(name)}:</span> ${esc(message)}`;
+  container.appendChild(d);
+  container.scrollTop=container.scrollHeight;
+}
+
 function sendDayChat(){
   const inp=document.getElementById('day-chat-in');
   if(!inp||!inp.value.trim())return;
@@ -1329,34 +1377,42 @@ function sendDayChat(){
 function renderPlayersTab(){
   const container=document.getElementById('tab-players');
   if(!container)return;
-  // Moderator uses special full list, others use public list
   const source=(S.isModerator&&S.moderatorPlayers)?S.moderatorPlayers:S.players;
   const allPlayers=source.filter(p=>!p.isModerator);
+
   container.innerHTML=`<div class="sec-label" style="padding:12px 0 6px;">Toți jucătorii</div>`+
     allPlayers.map(p=>{
       const isDead=!p.alive;
-      // Only moderator sees all roles; mafia sees teammates; player sees self
-      const isMafiaPlayer=isMafia(S.role);
-      const isTeammate=isMafiaPlayer&&S.mafiaTeam&&S.mafiaTeam.some(m=>m.id===p.id);
-      const teammateRole=isTeammate?S.mafiaTeam.find(m=>m.id===p.id)?.role:null;
-      const visibleRole=S.isModerator?p.role:(p.id===S.playerId?S.role:(isTeammate?teammateRole:null));
-      const isAvocat=visibleRole==='avocat'||(S.isModerator&&p.role==='avocat');
+      // isAvocat comes from server public data
+      const isAvocat=p.isAvocat||(S.isModerator&&p.role==='avocat');
+      // Visible role: moderator sees all, mafia sees teammates, player sees self
+      const isTeammate=isMafia(S.role)&&S.mafiaTeam&&S.mafiaTeam.some(m=>m.id===p.id);
+      const teammateData=isTeammate?S.mafiaTeam.find(m=>m.id===p.id):null;
+      const visibleRole=S.isModerator?p.role:(p.id===S.playerId?S.role:(isTeammate?teammateData?.role:null));
+
       let cls='player-item';
       if(isDead)cls+=' dead';
       if(isAvocat&&!isDead)cls+=' avocat-item';
-      // Icon: only show role emoji if role is known
-      const icon=isDead?'💀':(visibleRole?(RD[visibleRole]?.icon||'👤'):'👤');
+
+      // Icon: role emoji only if role known
+      let icon='👤';
+      if(isDead) icon='💀';
+      else if(visibleRole) icon=RD[visibleRole]?.icon||'👤';
+
       const color=isDead?'var(--red2)':(isAvocat?'var(--gold)':'var(--border)');
+
       let badge='';
-      if(isDead)badge=`<span class="p-badge badge-dead">Eliminat</span>`;
-      else if(isAvocat&&visibleRole)badge=`<span class="p-badge badge-avocat">Avocat</span>`;
-      else if(p.id===S.playerId)badge=`<span class="p-badge badge-you">Tu</span>`;
-      // Role name tag - only if known
+      if(isDead) badge=`<span class="p-badge badge-dead">Eliminat</span>`;
+      else if(isAvocat) badge=`<span class="p-badge badge-avocat">Avocat</span>`;
+      else if(p.id===S.playerId) badge=`<span class="p-badge badge-you">Tu</span>`;
+
+      // Role name: only if known
       let roleTag='';
       if(visibleRole){
-        const col=isDead?'var(--red2)':(isTeammate?'var(--red2)':(S.isModerator?(RC[visibleRole]||'var(--muted)'):'var(--green2)'));
+        const col=S.isModerator?(RC[visibleRole]||'var(--muted)'):(isTeammate?'var(--red2)':'var(--green2)');
         roleTag=`<span class="p-role-tag" style="color:${col};">${RD[visibleRole]?.name||''}</span>`;
       }
+
       return `<div class="${cls}">
         <div class="p-avatar" style="border-color:${color}">${icon}</div>
         <div class="p-name">${esc(p.name)}</div>
@@ -1386,20 +1442,34 @@ function renderVoteContent(){
     const defending=S.players.find(p=>p.id===S.defendingPlayerId);
     html+=`<div class="status s-warn" style="margin-bottom:9px;">⚖️ Judecată: <strong>${defending?esc(defending.name):'?'}</strong> este acuzat!</div>`;
 
-    // Advocate defend button - show if no advocate yet and current player is avocat
-    if(!S.advocateId&&isAvocat&&me&&me.alive){
-      html+=`<div class="field"><label>Mesajul tău de apărare</label>
-        <textarea id="advocate-msg" rows="3" placeholder="Argumentează apărarea..."></textarea>
-      </div>
-      <button class="btn btn-gold btn-sm" onclick="pressDefend()" style="margin-bottom:10px;">⚖️ Apără acuzatul</button>`;
-    }
-    if(S.advocateId){
-      html+=`<div class="status s-info" style="margin-bottom:9px;">Un avocat apără acuzatul.</div>`;
+    // Stage 1: No advocate yet - both avocats see the button
+    if(!S.advocateId){
+      if(isAvocat&&me&&me.alive&&!(S.advocateBlocked>0)){
+        html+=`<button class="btn btn-gold" onclick="pressDefend()" style="margin-bottom:10px;">⚖️ Apăr eu acuzatul!</button>`;
+      } else if(isAvocat&&S.advocateBlocked>0){
+        html+=`<div class="status s-danger">Ești blocat de la apărare această rundă.</div>`;
+      } else {
+        html+=`<div class="status s-info">Așteptăm ca un Avocat să preia apărarea...</div>`;
+      }
     }
 
-    // Judge votes
+    // Stage 2: Advocate has the floor - show defense chat
+    if(S.advocateId){
+      const advocateName=S.players.find(p=>p.id===S.advocateId)?.name||'Avocatul';
+      html+=`<div style="margin-bottom:10px;">
+        <div class="card-title" style="margin-bottom:6px;">⚖️ ${esc(advocateName)} apără acuzatul</div>
+        <div id="advocate-chat-msgs" style="min-height:60px;max-height:140px;overflow-y:auto;background:rgba(8,20,10,0.7);border:1px solid rgba(201,168,76,0.2);border-radius:4px;padding:8px 12px;margin-bottom:8px;display:flex;flex-direction:column;gap:4px;"></div>
+        ${S.isActiveAdvocate?`
+        <div style="display:flex;border:1px solid rgba(201,168,76,0.3);border-radius:4px;overflow:hidden;">
+          <input id="advocate-chat-in" style="flex:1;padding:9px 12px;background:transparent;border:none;color:var(--text);font-family:'EB Garamond',serif;font-size:0.95rem;outline:none;" placeholder="Scrie mesajul de apărare..." onkeydown="if(event.key==='Enter')sendAdvocateMessage()" maxlength="400">
+          <button onclick="sendAdvocateMessage()" style="padding:9px 14px;background:rgba(201,168,76,0.15);border:none;color:var(--gold);cursor:pointer;font-size:0.95rem;">➤</button>
+        </div>`:''}
+      </div>`;
+    }
+
+    // Judge vote buttons - only after advocate has spoken or no advocate
     const canVote=((me&&me.alive&&!isMuted&&!isAvocat)||isMod);
-    if(canVote){
+    if(canVote&&S.advocateId){
       html+=`<div class="sec-label" style="margin-top:10px;">Votul tău</div>
         <div class="judge-btns">
           <button class="judge-btn judge-elim ${S.myJudgeVote==='like'?'voted':''}" onclick="castJudgeVote('like')">👎 Elimină</button>
@@ -1463,8 +1533,14 @@ function castVote(targetId){
 }
 
 function pressDefend(){
-  const msgEl=document.getElementById('advocate-msg');
-  send({type:'advocate_defend',playerId:S.playerId,message:msgEl?msgEl.value.trim():''});
+  send({type:'advocate_defend',playerId:S.playerId});
+}
+
+function sendAdvocateMessage(){
+  const inp=document.getElementById('advocate-chat-in');
+  if(!inp||!inp.value.trim())return;
+  send({type:'advocate_message',playerId:S.playerId,message:inp.value.trim()});
+  inp.value='';
 }
 
 function castJudgeVote(vote){
