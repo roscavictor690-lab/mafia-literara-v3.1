@@ -620,6 +620,7 @@ const S={
   mutedThisDay:[],currentTab:'chat',
   executorWritten:false,sebastianMode:'mafia',
   criticAnswer:null,
+  moderatorPlayers:null, // full player list with roles for moderator only
 };
 let currentVotes=new Map();
 let countdownInterval=null;
@@ -811,25 +812,32 @@ function handleMsg(msg){
         document.getElementById('nm-day').textContent=msg.dayNumber;
         renderNightModPlayers();showScreen('s-night-mod');
       } else {
-        renderNightContent({phase:'waiting',active:false});
+        // Show waiting until night_phase arrives
+        const sub=document.getElementById('np-phase-sub');
+        if(sub)sub.textContent='Noaptea a început...';
         showScreen('s-night-player');
       }
       break;
 
     case 'night_phase':
+      // PARALLEL NIGHT: all players get active:true at once
       S.nightPhase=msg.phase;
       if(!S.isModerator){
-        renderNightContent(msg);
-        if(msg.phase==='executor_can_write'||S.role==='executor'){
-          // executor always sees write UI
-        }
+        renderNightContent({phase:'active',active:true,role:S.role});
       } else {
-        updateNightModPhase(msg.phase);
+        updateNightModPhase('active');
       }
       break;
 
     case 'executor_can_write':
       if(S.role==='executor')renderExecutorWriteUI();break;
+
+    case 'moderator_players_update':
+      // Moderator gets full player list with roles
+      S.moderatorPlayers=msg.players;
+      renderNightModPlayers();
+      renderPlayersTab();
+      break;
 
     case 'night_action_confirmed':
       S.nightActionDone=true;
@@ -999,7 +1007,8 @@ function updateNightModPhase(phase){
 
 function renderNightModPlayers(){
   const container=document.getElementById('nm-players');
-  container.innerHTML=S.players.filter(p=>!p.isModerator).map(p=>`
+  const source=(S.moderatorPlayers||S.players).filter(p=>!p.isModerator);
+  container.innerHTML=source.map(p=>`
     <div class="player-item ${!p.alive?'dead':''}">
       <div class="p-avatar" style="border-color:${RC[p.role]||'var(--border)'}">${p.alive?(RD[p.role]?.icon||'?'):'💀'}</div>
       <div class="p-name">${esc(p.name)}</div>
@@ -1320,23 +1329,34 @@ function sendDayChat(){
 function renderPlayersTab(){
   const container=document.getElementById('tab-players');
   if(!container)return;
-  // Show ALL players - alive normal, dead red, avocati gold
-  const allPlayers=S.players.filter(p=>!p.isModerator);
+  // Moderator uses special full list, others use public list
+  const source=(S.isModerator&&S.moderatorPlayers)?S.moderatorPlayers:S.players;
+  const allPlayers=source.filter(p=>!p.isModerator);
   container.innerHTML=`<div class="sec-label" style="padding:12px 0 6px;">Toți jucătorii</div>`+
     allPlayers.map(p=>{
-      const isAvocat=p.role==='avocat';
       const isDead=!p.alive;
+      // Only moderator sees all roles; mafia sees teammates; player sees self
+      const isMafiaPlayer=isMafia(S.role);
+      const isTeammate=isMafiaPlayer&&S.mafiaTeam&&S.mafiaTeam.some(m=>m.id===p.id);
+      const teammateRole=isTeammate?S.mafiaTeam.find(m=>m.id===p.id)?.role:null;
+      const visibleRole=S.isModerator?p.role:(p.id===S.playerId?S.role:(isTeammate?teammateRole:null));
+      const isAvocat=visibleRole==='avocat'||(S.isModerator&&p.role==='avocat');
       let cls='player-item';
       if(isDead)cls+=' dead';
       if(isAvocat&&!isDead)cls+=' avocat-item';
-      const icon=isDead?'💀':(RD[p.role]?.icon||'👤');
+      // Icon: only show role emoji if role is known
+      const icon=isDead?'💀':(visibleRole?(RD[visibleRole]?.icon||'👤'):'👤');
       const color=isDead?'var(--red2)':(isAvocat?'var(--gold)':'var(--border)');
       let badge='';
       if(isDead)badge=`<span class="p-badge badge-dead">Eliminat</span>`;
-      else if(isAvocat)badge=`<span class="p-badge badge-avocat">Avocat</span>`;
+      else if(isAvocat&&visibleRole)badge=`<span class="p-badge badge-avocat">Avocat</span>`;
       else if(p.id===S.playerId)badge=`<span class="p-badge badge-you">Tu</span>`;
-      // Moderator sees role of everyone
-      const roleTag=S.isModerator?`<span class="p-role-tag" style="color:${RC[p.role]||'var(--muted)'};">${RD[p.role]?.name||''}</span>`:'';
+      // Role name tag - only if known
+      let roleTag='';
+      if(visibleRole){
+        const col=isDead?'var(--red2)':(isTeammate?'var(--red2)':(S.isModerator?(RC[visibleRole]||'var(--muted)'):'var(--green2)'));
+        roleTag=`<span class="p-role-tag" style="color:${col};">${RD[visibleRole]?.name||''}</span>`;
+      }
       return `<div class="${cls}">
         <div class="p-avatar" style="border-color:${color}">${icon}</div>
         <div class="p-name">${esc(p.name)}</div>
