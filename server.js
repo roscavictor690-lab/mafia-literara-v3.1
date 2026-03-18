@@ -121,14 +121,14 @@ function sendToId(room, playerId, message) {
 }
 
 function getPublicPlayers(room) {
-  // BUG FIX 2: Do NOT expose roles publicly - roles are private
   return Array.from(room.players.values()).map(p => ({
     id: p.id,
     name: p.name,
     alive: p.alive,
     isModerator: p.id === room.moderatorId,
     muted: room.mutedThisDay && room.mutedThisDay.has(p.id),
-    // role is NOT included here - sent privately to each player and moderator only
+    isAvocat: p.role === ROLES.AVOCAT, // safe to expose - avocats are publicly neutral
+    // full role is NOT included - sent privately only
   }));
 }
 
@@ -581,8 +581,10 @@ wss.on('connection', (ws) => {
               room.nightActions.set(`visit_${playerId}`, msg.targetId);
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              // Boschetarul ends the night
-              resolveNight(room);
+              // FIX 3: Noaptea se termina DOAR cand moderatorul apasa butonul
+              // Notify moderator that boschetar is done
+              const modP = room.players.get(room.moderatorId);
+              if (modP) sendTo(modP, { type: 'boschetar_done' });
             }
             break;
 
@@ -674,19 +676,39 @@ wss.on('connection', (ws) => {
       }
 
       case 'advocate_defend': {
+        // Stage 1: First advocate to press gets the floor
         const room = rooms.get(roomCode);
         if (!room) return;
         const player = room.players.get(playerId);
         if (!player || player.role !== ROLES.AVOCAT || !player.alive) return;
-        if (room.advocateId) return;
+        if (room.advocateId) return; // already taken
         const blocked = room.advocateBlocked.get(playerId) || 0;
         if (blocked > 0) { sendTo(player, { type: 'error', message: 'avocat_blocat' }); return; }
         room.advocateId = playerId;
+        // Notify all: this advocate has the floor
         broadcast(room, {
           type: 'advocate_defending',
+          advocateId: playerId,
           advocateName: player.name,
-          message: msg.message || '',
           defendingPlayerId: room.defendingPlayerId,
+        });
+        // Give advocate the chat interface
+        sendTo(player, { type: 'advocate_got_floor' });
+        break;
+      }
+
+      case 'advocate_message': {
+        // Stage 2: Advocate sends unlimited defense messages
+        const room = rooms.get(roomCode);
+        if (!room) return;
+        const player = room.players.get(playerId);
+        if (!player || player.role !== ROLES.AVOCAT || !player.alive) return;
+        if (room.advocateId !== playerId) return; // only the active advocate
+        if (!msg.message || !msg.message.trim()) return;
+        broadcast(room, {
+          type: 'advocate_chat',
+          advocateName: player.name,
+          message: msg.message.trim(),
         });
         break;
       }
@@ -714,7 +736,6 @@ wss.on('connection', (ws) => {
       }
 
       case 'moderator_start_day': {
-        // BUG FIX 3: Force end night - was missing
         const room = rooms.get(roomCode);
         if (!room || playerId !== room.moderatorId || room.phase !== 'night') return;
         resolveNight(room);
