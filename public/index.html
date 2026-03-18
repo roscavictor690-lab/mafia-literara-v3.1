@@ -848,6 +848,18 @@ function handleMsg(msg){
     case 'executor_accepted_confirmed':
       showToast('✓ Ai acceptat cererea Executorului!',3000);break;
 
+    case 'executor_request_resolved':
+      // BUG FIX 1: Remove executor request from UI
+      const execSec=document.getElementById('nm-executor-section');
+      if(execSec)execSec.innerHTML='';
+      const npC=document.getElementById('np-content');
+      if(npC){
+        const execCard=npC.querySelector('[style*="142,68,173"]');
+        if(execCard)execCard.remove();
+      }
+      showToast(msg.accepted?'⚔️ Cererea a fost acceptată!':'⚔️ Cererea a fost refuzată.',3000);
+      break;
+
     case 'boschetar_result':
       if(msg.sawVisitor)showToast(`📚 Don Salieri a venit la persoana vizitată!`,7000);
       else showToast('📚 Nimeni nu a venit. Ai venit cu o carte acasă.',4000);
