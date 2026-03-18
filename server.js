@@ -549,7 +549,8 @@ wss.on('connection', (ws) => {
             if (player.role === ROLES.DOCTOR && room.nightPhase === 'doctor') {
               room.nightActions.set('doctor_saved', msg.targetId);
               sendTo(player, { type: 'night_action_confirmed' });
-              advanceNight(room);
+              // BUG FIX 2: Small delay to ensure confirmed message arrives before phase change
+              setTimeout(() => advanceNight(room), 200);
             }
             break;
 
@@ -557,7 +558,7 @@ wss.on('connection', (ws) => {
             if (player.role === ROLES.FISC && room.nightPhase === 'fisc') {
               room.fiscTargetId = msg.targetId;
               sendTo(player, { type: 'night_action_confirmed' });
-              advanceNight(room);
+              setTimeout(() => advanceNight(room), 200);
             }
             break;
 
@@ -634,11 +635,16 @@ wss.on('connection', (ws) => {
           case 'executor_accept':
             if ((player.role === ROLES.CRITIC || playerId === room.moderatorId) && room.executorRequest) {
               room.executorAccepted = true;
-              sendTo(player, { type: 'executor_accepted_confirmed' });
+              // BUG FIX 1: Notify all to dismiss executor request UI
+              broadcast(room, { type: 'executor_request_resolved', accepted: true });
             }
             break;
 
           case 'executor_reject':
+            if ((player.role === ROLES.CRITIC || playerId === room.moderatorId) && room.executorRequest) {
+              // BUG FIX 1: Notify all to dismiss executor request UI
+              broadcast(room, { type: 'executor_request_resolved', accepted: false });
+            }
             break;
 
           case 'sebastian_action':
@@ -730,6 +736,14 @@ wss.on('connection', (ws) => {
         const room = rooms.get(roomCode);
         if (!room || playerId !== room.moderatorId) return;
         resolveJudgeVote(room);
+        break;
+      }
+
+      case 'moderator_start_day': {
+        // BUG FIX 3: Force end night - was missing
+        const room = rooms.get(roomCode);
+        if (!room || playerId !== room.moderatorId || room.phase !== 'night') return;
+        resolveNight(room);
         break;
       }
 
