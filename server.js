@@ -537,6 +537,7 @@ wss.on('connection', (ws) => {
               room.nightActions.set('doctor_saved', msg.targetId);
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
+              broadcast(room, { type: 'night_log', message: 'Doctorul Lingvist-Literar a salvat pe cineva în această noapte.' });
             }
             break;
 
@@ -545,6 +546,7 @@ wss.on('connection', (ws) => {
               room.fiscTargetId = msg.targetId;
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
+              broadcast(room, { type: 'night_log', message: 'Fiscul Lingvist-Literar și-a făcut datoria în această noapte.' });
             }
             break;
 
@@ -558,6 +560,7 @@ wss.on('connection', (ws) => {
               };
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
+              broadcast(room, { type: 'night_log', message: 'Criticul Lingvist-Literar a depus întrebarea.' });
               // Send question to target
               const target = room.players.get(msg.targetId);
               if (target) sendTo(target, { type: 'critic_question', question: msg.question });
@@ -582,6 +585,7 @@ wss.on('connection', (ws) => {
               room.nightActions.set(`mafia_kill_${playerId}`, msg.targetId);
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
+              broadcast(room, { type: 'night_log', message: 'Mafia Literară a acționat în umbră.' }, playerId);
             }
             break;
 
@@ -591,7 +595,7 @@ wss.on('connection', (ws) => {
               room.nightActions.set(`visit_${playerId}`, msg.targetId);
               room.nightDone.add(playerId);
               sendTo(player, { type: 'night_action_confirmed' });
-              // FIX 3: Noaptea se termina DOAR cand moderatorul apasa butonul
+              broadcast(room, { type: 'night_log', message: room.boschetarVisit?.sawVisitor ? 'Boschetarul Lingvist-Literar a venit cu gânduri grele acasă.' : 'Boschetarul Lingvist-Literar a venit cu o carte acasă.' });
               // Notify moderator that boschetar is done
               const modP = room.players.get(room.moderatorId);
               if (modP) sendTo(modP, { type: 'boschetar_done' });
@@ -615,6 +619,7 @@ wss.on('connection', (ws) => {
               if (criticP) sendTo(criticP, notif);
               if (modP) sendTo(modP, notif);
               sendTo(player, { type: 'night_action_confirmed' });
+              broadcast(room, { type: 'night_log', message: 'Executorul Lingvist-Literar a trimis o cerere în această noapte.' });
             }
             break;
 
