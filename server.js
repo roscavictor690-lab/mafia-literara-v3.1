@@ -189,6 +189,7 @@ function startNight(room) {
 
   // Send public list to all players, full list to moderator
   broadcast(room, { type: 'night_started', dayNumber: room.dayNumber, players: getPublicPlayers(room) });
+  broadcast(room, { type: 'phase_separator', text: `🌙 Noaptea ${room.dayNumber}` });
   const modPlayer = room.players.get(room.moderatorId);
   if (modPlayer) sendTo(modPlayer, { type: 'moderator_players_update', players: getModeratorPlayers(room) });
 
@@ -246,12 +247,13 @@ function resolveNight(room) {
 
   const don = Array.from(room.players.values()).find(p => p.role === ROLES.DON && p.alive);
 
-  // Boschetar
+  // Boschetar - FIX 3: sends full visitor name + role
   if (room.boschetarVisit) {
     const { vagrantId, visitedId } = room.boschetarVisit;
     let visitorFound = null;
     if (mafiaKillTarget === visitedId) {
-      visitorFound = don || { name: 'Mafia', role: 'mafiot' };
+      // Don takes blame - boschetarul vede Don Salieri
+      visitorFound = don || { name: 'Necunoscut', role: ROLES.DON };
     }
     const vagrant = room.players.get(vagrantId);
     if (vagrant) {
@@ -260,7 +262,7 @@ function resolveNight(room) {
         type: 'boschetar_result',
         sawVisitor,
         visitorName: sawVisitor ? visitorFound.name : null,
-        visitorRole: sawVisitor ? visitorFound.role : null,
+        visitorRole: sawVisitor ? visitorFound.role : null, // full role sent
       });
       room.boschetarVisit.sawVisitor = sawVisitor;
     }
@@ -331,6 +333,7 @@ function resolveNight(room) {
   const modRef = room.players.get(room.moderatorId);
   if (modRef) sendTo(modRef, { type: 'moderator_players_update', players: modPlayersData });
 
+  broadcast(room, { type: 'phase_separator', text: `☀ Ziua ${room.dayNumber}` });
   broadcast(room, {
     type: 'day_started',
     dayNumber: room.dayNumber,
@@ -417,10 +420,17 @@ function resolveJudgeVote(room) {
 
   room.judgeVotes.clear();
   room.defendingPlayerId = null;
-  room.mutedThisDay.clear();
+  room.advocateId = null;
 
   const winner = checkWin(room);
   if (winner) { endGame(room, winner); return; }
+
+  // FIX 1: Auto-start night after judecata (3s delay for UI)
+  broadcast(room, { type: 'night_starting_soon', seconds: 3 });
+  setTimeout(() => {
+    room.mutedThisDay.clear();
+    startNight(room);
+  }, 3000);
 }
 
 // ===== WEBSOCKET =====
