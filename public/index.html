@@ -569,6 +569,41 @@ body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia
 </div>
 
 </div>
+
+<!-- PERMANENT CHAT OVERLAY -->
+<div id="permanent-chat" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(5,10,6,0.97);flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold);">💬 Chat orașului</div>
+    <button onclick="toggleChat()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;">✕</button>
+  </div>
+  <div id="perm-chat-msgs" style="flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:5px;"></div>
+  <div id="perm-chat-input-row" style="display:flex;border-top:1px solid var(--border);flex-shrink:0;">
+    <input id="perm-chat-in" style="flex:1;padding:10px 14px;background:transparent;border:none;color:var(--text);font-family:'EB Garamond',serif;font-size:0.95rem;outline:none;" placeholder="Scrie un mesaj..." onkeydown="if(event.key==='Enter')sendPermChat()" maxlength="300">
+    <button onclick="sendPermChat()" style="padding:10px 14px;background:rgba(201,168,76,0.12);border:none;color:var(--gold);cursor:pointer;">➤</button>
+  </div>
+</div>
+
+<!-- PERMANENT PLAYERS OVERLAY -->
+<div id="permanent-players" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(5,10,6,0.97);flex-direction:column;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold);">👥 Jucători</div>
+    <button onclick="togglePlayers()" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer;">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:12px 16px;" id="perm-players-list"></div>
+</div>
+
+<!-- PERSISTENT BOTTOM BAR (visible always during game) -->
+<div id="game-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:40;display:none;border-top:1px solid var(--border2);background:rgba(5,12,7,0.97);backdrop-filter:blur(8px);">
+  <div style="display:flex;">
+    <button class="nav-btn" onclick="toggleChat()" id="perm-chat-btn">
+      <span class="nav-icon">💬</span><span>Chat</span>
+    </button>
+    <button class="nav-btn" onclick="togglePlayers()" id="perm-players-btn">
+      <span class="nav-icon">👥</span><span>Jucători</span>
+    </button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ROLE REVEAL OVERLAY -->
@@ -620,8 +655,9 @@ const S={
   mutedThisDay:[],currentTab:'chat',
   executorWritten:false,sebastianMode:'mafia',
   criticAnswer:null,
-  moderatorPlayers:null, // full player list with roles for moderator only
-  isActiveAdvocate:false, // this player is the active defending advocate
+  moderatorPlayers:null,
+  isActiveAdvocate:false,
+  advocateMsgs:[], // persistent advocate chat messages
 };
 let currentVotes=new Map();
 let countdownInterval=null;
@@ -695,7 +731,120 @@ function modStartDay(){send({type:'moderator_start_day',playerId:S.playerId});}
 
 function resetGame(){
   S.role=null;S.isModerator=false;S.players=[];S.phase='lobby';
+  document.getElementById('game-bottom-bar').style.display='none';
   showScreen('s-home');
+}
+
+// ===== PERMANENT CHAT & PLAYERS =====
+function showGameBottomBar(){
+  document.getElementById('game-bottom-bar').style.display='flex';
+}
+
+function toggleChat(){
+  const el=document.getElementById('permanent-chat');
+  const isOpen=el.style.display==='flex';
+  el.style.display=isOpen?'none':'flex';
+  document.getElementById('permanent-players').style.display='none';
+  if(!isOpen){
+    const msgs=document.getElementById('perm-chat-msgs');
+    if(msgs)msgs.scrollTop=msgs.scrollHeight;
+    // Show/hide input based on phase and role
+    updatePermChatInput();
+  }
+}
+
+function togglePlayers(){
+  const el=document.getElementById('permanent-players');
+  const isOpen=el.style.display==='flex';
+  el.style.display=isOpen?'none':'flex';
+  document.getElementById('permanent-chat').style.display='none';
+  if(!isOpen) renderPermPlayers();
+}
+
+function updatePermChatInput(){
+  const row=document.getElementById('perm-chat-input-row');
+  if(!row)return;
+  // Hide input at night (no talking at night) or if muted or dead
+  const me=S.players.find(p=>p.id===S.playerId);
+  const canTalk=S.phase==='day'&&me&&me.alive&&!S.mutedThisDay.includes(S.playerId)&&!S.isModerator;
+  row.style.display=canTalk?'flex':'none';
+}
+
+function sendPermChat(){
+  const inp=document.getElementById('perm-chat-in');
+  if(!inp||!inp.value.trim())return;
+  const me=S.players.find(p=>p.id===S.playerId);
+  if(!me||!me.alive){showToast('Ești eliminat!');return;}
+  if(S.mutedThisDay.includes(S.playerId)){showToast('🏛️ Fiscul te-a blocat!');return;}
+  if(S.phase!=='day'){showToast('Noaptea nu se vorbește!');return;}
+  send({type:'day_chat',playerId:S.playerId,message:inp.value.trim()});
+  inp.value='';
+}
+
+function addChatMsg(text, type='system'){
+  const c=document.getElementById('perm-chat-msgs');
+  if(!c)return;
+  const d=document.createElement('div');
+  if(type==='system'){
+    d.className='chat-msg system';
+    d.textContent=text;
+  } else if(type==='separator'){
+    d.style.cssText='text-align:center;padding:8px 0;font-family:'Playfair Display',serif;font-size:0.75rem;font-weight:700;letter-spacing:0.15em;color:var(--gold);opacity:0.7;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:6px 0;';
+    d.textContent=text;
+  } else {
+    d.className='chat-msg';
+    d.innerHTML=text;
+  }
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
+function addChatSeparator(text){
+  addChatMsg(text,'separator');
+}
+
+function addPermChat(sender, message, isSelf){
+  const c=document.getElementById('perm-chat-msgs');
+  if(!c)return;
+  const d=document.createElement('div');
+  d.className='chat-msg';
+  d.innerHTML=`<span class="sender">${esc(sender)}:</span> ${esc(message)}`;
+  if(isSelf)d.style.opacity='0.85';
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
+function renderPermPlayers(){
+  const container=document.getElementById('perm-players-list');
+  if(!container)return;
+  const source=(S.isModerator&&S.moderatorPlayers)?S.moderatorPlayers:S.players;
+  const allPlayers=source.filter(p=>!p.isModerator);
+  container.innerHTML=allPlayers.map(p=>{
+    const isDead=!p.alive;
+    const isAvocat=p.isAvocat||(S.isModerator&&p.role==='avocat');
+    const isTeammate=isMafia(S.role)&&S.mafiaTeam&&S.mafiaTeam.some(m=>m.id===p.id);
+    const teammateData=isTeammate?S.mafiaTeam.find(m=>m.id===p.id):null;
+    const visibleRole=S.isModerator?p.role:(p.id===S.playerId?S.role:(isTeammate?teammateData?.role:null));
+    let cls='player-item';
+    if(isDead)cls+=' dead';
+    if(isAvocat&&!isDead)cls+=' avocat-item';
+    const icon=isDead?'💀':(visibleRole?(RD[visibleRole]?.icon||'👤'):'👤');
+    const color=isDead?'var(--red2)':(isAvocat?'var(--gold)':'var(--border)');
+    let badge='';
+    if(isDead)badge=`<span class="p-badge badge-dead">Eliminat</span>`;
+    else if(isAvocat)badge=`<span class="p-badge badge-avocat">Avocat</span>`;
+    else if(p.id===S.playerId)badge=`<span class="p-badge badge-you">Tu</span>`;
+    let roleTag='';
+    if(visibleRole){
+      const col=S.isModerator?(RC[visibleRole]||'var(--muted)'):(isTeammate?'var(--red2)':'var(--green2)');
+      roleTag=`<span class="p-role-tag" style="color:${col};">${RD[visibleRole]?.name||''}</span>`;
+    }
+    return `<div class="${cls}">
+      <div class="p-avatar" style="border-color:${color}">${icon}</div>
+      <div class="p-name">${esc(p.name)}</div>
+      ${roleTag}${badge}
+    </div>`;
+  }).join('');
 }
 
 // ===== ROLE BADGE (always visible) =====
@@ -796,6 +945,7 @@ function handleMsg(msg){
       S.phase='night';S.players=msg.players;S.dayNumber=1;
       S.nightActionDone=false;S.nightTarget=null;S.criticColors={};
       S.executorWritten=false;
+      showGameBottomBar();
       if(msg.role==='moderator'){
         S.isModerator=true;S.role=null;
         document.getElementById('nm-day').textContent=1;
@@ -842,7 +992,11 @@ function handleMsg(msg){
 
     case 'night_action_confirmed':
       S.nightActionDone=true;
-      if(S.role!=='executor')renderNightContent({phase:S.nightPhase,active:true,confirmed:true});break;
+      if(S.role!=='executor')renderNightContent({phase:S.nightPhase,active:true,confirmed:true});
+      // Show confirmation in perm chat for self only
+      const roleNameC=RD[S.role]?.name||S.role;
+      addChatMsg(`✓ ${roleNameC} — acțiunea ta a fost trimisă.`,'system');
+      break;
 
     case 'critic_question':
       renderCriticAnswerUI(msg.question);break;
@@ -870,19 +1024,34 @@ function handleMsg(msg){
       break;
 
     case 'boschetar_done':
-      // Moderator: boschetarul si-a facut treaba
       showToast('📚 Boschetarul și-a terminat vizita. Poți trece la zi!',5000);
       break;
 
     case 'boschetar_result':
-      if(msg.sawVisitor)showToast(`📚 Don Salieri a venit la persoana vizitată!`,7000);
-      else showToast('📚 Nimeni nu a venit. Ai venit cu o carte acasă.',4000);
+      // FIX 3: Show name AND role of visitor
+      if(msg.sawVisitor){
+        const roleNameB=RD[msg.visitorRole]?.name||msg.visitorRole||'?';
+        showToast(`📚 Ai văzut: ${msg.visitorName} (${roleNameB}) a venit!`,8000);
+        addChatMsg(`📚 Boschetarul a văzut: ${esc(msg.visitorName)} — ${esc(roleNameB)}`,'system');
+      } else {
+        showToast('📚 Nimeni nu a venit. Ai venit cu o carte acasă.',4000);
+      }
+      break;
+
+    case 'phase_separator':
+      // FIX 4: Phase separator in chat
+      addChatSeparator(msg.text);
+      break;
+
+    case 'night_starting_soon':
+      showToast(`🌙 Noaptea începe în ${msg.seconds} secunde...`,3000);
+      addChatMsg('🌙 Judecata s-a încheiat. Noaptea începe...','system');
       break;
 
     case 'day_started':
       S.phase='day';S.players=msg.players;S.dayNumber=msg.dayNumber;
       S.myVote=null;S.myJudgeVote=null;S.judgePhase=false;
-      S.advocateId=null;S.defendingPlayerId=null;S.isActiveAdvocate=false;
+      S.advocateId=null;S.defendingPlayerId=null;S.isActiveAdvocate=false;S.advocateMsgs=[];
       S.mutedThisDay=msg.mutedPlayers||[];
       if(msg.criticColors)mergeCriticColors(msg.criticColors);
       currentVotes.clear();
@@ -895,10 +1064,14 @@ function handleMsg(msg){
       setTimeout(()=>showDayScreen(),1500);break;
 
     case 'day_log':
-      addDayChatSystem(msg.message);break;
+      addDayChatSystem(msg.message);
+      addChatMsg(msg.message,'system');
+      break;
 
     case 'day_chat':
-      addDayChat(msg.senderName,msg.message,msg.senderId===S.playerId);break;
+      addDayChat(msg.senderName,msg.message,msg.senderId===S.playerId);
+      addPermChat(msg.senderName,msg.message,msg.senderId===S.playerId);
+      break;
 
     case 'mafia_chat':
       addMafiaChat(msg.senderName,msg.message);break;
@@ -943,13 +1116,17 @@ function handleMsg(msg){
     case 'player_eliminated':
       S.players=msg.players;
       showToast(`📖 ${msg.playerName} eliminat! (${RD[msg.role]?.name||msg.role})`,5000);
+      addChatMsg(`📖 ${esc(msg.playerName)} a fost eliminat. Rol: ${RD[msg.role]?.name||msg.role}`,'system');
       S.judgePhase=false;S.defendingPlayerId=null;
       document.getElementById('nav-vote-label').textContent='Vot';
       if(S.currentTab==='vote'||S.currentTab==='players')renderVoteContent();
-      renderPlayersTab();break;
+      renderPlayersTab();
+      renderPermPlayers();
+      break;
 
     case 'player_spared':
       showToast(`✅ Acuzatul a fost iertat!`,4000);
+      addChatMsg('✅ Acuzatul a fost iertat de cetățeni.','system');
       S.judgePhase=false;S.defendingPlayerId=null;
       document.getElementById('nav-vote-label').textContent='Vot';
       if(S.currentTab==='vote')renderVoteContent();break;
@@ -1355,12 +1532,18 @@ function addDayVoteMsg(msg){
 }
 
 function addAdvocateMessage(name, message){
+  // Store persistently
+  S.advocateMsgs.push({name, message});
+  // Render into container if visible
+  renderAdvocateMsgs();
+}
+
+function renderAdvocateMsgs(){
   const container=document.getElementById('advocate-chat-msgs');
   if(!container)return;
-  const d=document.createElement('div');
-  d.className='chat-msg';
-  d.innerHTML=`<span class="sender" style="color:var(--gold2);">⚖️ ${esc(name)}:</span> ${esc(message)}`;
-  container.appendChild(d);
+  container.innerHTML=S.advocateMsgs.map(m=>
+    `<div class="chat-msg"><span class="sender" style="color:var(--gold2);">⚖️ ${esc(m.name)}:</span> ${esc(m.message)}</div>`
+  ).join('');
   container.scrollTop=container.scrollHeight;
 }
 
@@ -1522,6 +1705,8 @@ function renderVoteContent(){
     }
   }
   container.innerHTML=html;
+  // Re-populate advocate messages after re-render (prevents disappearing)
+  if(S.advocateMsgs.length>0) renderAdvocateMsgs();
 }
 
 function castVote(targetId){
