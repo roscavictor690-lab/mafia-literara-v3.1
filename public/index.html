@@ -503,7 +503,7 @@ body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia
     <div id="nm-players" class="player-list"></div>
     <div id="nm-executor-section" style="margin-top:10px;"></div>
   </div>
-  <div style="padding:10px 18px 16px;flex-shrink:0;">
+  <div style="padding:10px 18px 70px;flex-shrink:0;">
     <button class="btn btn-gold btn-sm" onclick="modStartDay()">☀ Treci la zi (forțat)</button>
   </div>
 </div>
@@ -993,9 +993,11 @@ function handleMsg(msg){
     case 'night_action_confirmed':
       S.nightActionDone=true;
       if(S.role!=='executor')renderNightContent({phase:S.nightPhase,active:true,confirmed:true});
-      // Show confirmation in perm chat for self only
-      const roleNameC=RD[S.role]?.name||S.role;
-      addChatMsg(`✓ ${roleNameC} — acțiunea ta a fost trimisă.`,'system');
+      break;
+
+    case 'night_log':
+      // FIX 1: Night action log - broadcast to ALL players
+      addChatMsg(msg.message,'system');
       break;
 
     case 'critic_question':
@@ -1224,38 +1226,47 @@ function renderNightContent(msg){
   if(!content) return;
   const role=S.role;
   const confirmed=msg.confirmed;
-
-  // Always show executor write UI if executor and not written yet
   const executorExtra=(role==='executor'&&!S.executorWritten)?renderExecutorUIHTML():'';
 
   if(confirmed){
-    sub.textContent='Acțiunea ta a fost trimisă!';
-    content.innerHTML=`<div class="status s-success" style="margin:14px 0;">✓ Acțiunea a fost trimisă! Așteaptă moderatorul să treacă la zi.</div>${executorExtra}`;
+    sub.textContent='Acțiunea ta a fost confirmată!';
+    // For mafia: still show chat after confirming
+    if(isMafia(role)){
+      content.innerHTML=`
+        <div class="status s-success" style="margin-bottom:12px;">✓ Alegerea ta a fost bifată!</div>
+        ${renderMafiaChatHTML()}`;
+    } else {
+      content.innerHTML=`<div class="status s-success" style="margin:14px 0;">✓ Alegerea ta a fost bifată! Așteaptă moderatorul.</div>${executorExtra}`;
+    }
     return;
   }
 
-  // Render based on role - all parallel
   const alive=S.players.filter(p=>p.alive&&!p.isModerator&&p.id!==S.playerId&&p.role!=='avocat');
   const allAlive=S.players.filter(p=>p.alive&&!p.isModerator&&p.role!=='avocat');
 
-  sub.textContent='Noaptea — fă-ți acțiunea!';
+  // Helper: render target grid + confirm button
+  function targetGrid(players, actionType, subText){
+    const grid=players.map(p=>`
+      <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="selectNightTarget('${actionType}','${p.id}')">
+        ${esc(p.name)}${p.id===S.playerId?' (Tu)':''}
+      </button>`).join('');
+    const confirmBtn=S.nightTarget?`
+      <button class="btn btn-gold" style="margin-top:12px;" onclick="confirmNightAction('${actionType}')">
+        ✓ Bifează alegerea
+      </button>`:'';
+    return `<div class="sec-label">${subText}</div>
+      <div class="target-grid">${grid}</div>
+      ${confirmBtn}`;
+  }
+
+  sub.textContent='Noaptea — alege și bifează!';
 
   if(role==='doctor'){
     sub.textContent='Salvează un jucător';
-    content.innerHTML=`<div class="sec-label">Salvează un jucător această noapte</div>
-      <div class="target-grid">${allAlive.map(p=>`
-        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('doctor_save','${p.id}')">
-          ${esc(p.name)}${p.id===S.playerId?' (Tu)':''}
-        </button>`).join('')}</div>`;
-
+    content.innerHTML=targetGrid(allAlive,'doctor_save','Salvează un jucător această noapte');
   } else if(role==='fisc'){
     sub.textContent='Blochează un jucător';
-    content.innerHTML=`<div class="sec-label">Blochează un jucător această noapte</div>
-      <div class="target-grid">${alive.map(p=>`
-        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('fisc_mute','${p.id}')">
-          ${esc(p.name)}
-        </button>`).join('')}</div>`;
-
+    content.innerHTML=targetGrid(alive,'fisc_mute','Blochează un jucător această noapte');
   } else if(role==='critic'){
     sub.textContent='Trimite o întrebare DA/NU';
     content.innerHTML=`
@@ -1275,17 +1286,21 @@ function renderNightContent(msg){
           <button class="btn btn-ghost btn-sm" id="ans-nu" onclick="setCriticAns('NU')" style="flex:1;">NU</button>
         </div>
       </div>
-      <button class="btn btn-gold" onclick="sendCriticQ()">Trimite întrebarea</button>`;
+      <button class="btn btn-gold" onclick="sendCriticQ()">✓ Bifează și trimite întrebarea</button>`;
     S.criticAnswer=null;
-
   } else if(isMafia(role)){
     sub.textContent='Votul mafiei';
+    const confirmBtn=S.nightTarget?`
+      <button class="btn btn-gold" style="margin-top:12px;" onclick="confirmNightAction('mafia_kill')">
+        ✓ Bifează alegerea
+      </button>`:'';
     content.innerHTML=`
       <div class="sec-label">Alege victima nopții</div>
       <div class="target-grid">${alive.map(p=>`
-        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('mafia_kill','${p.id}')">
+        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="selectNightTarget('mafia_kill','${p.id}')">
           ${esc(p.name)}
         </button>`).join('')}</div>
+      ${confirmBtn}
       ${role==='sebastian'?`
       <div class="divider"></div>
       <div class="sec-label">Acțiunea Sebastian (opțional)</div>
@@ -1295,28 +1310,18 @@ function renderNightContent(msg){
       </div>
       <div class="target-grid" id="seb-grid">${alive.map(p=>`<button class="target-btn" onclick="doSeb('${p.id}')">${esc(p.name)}</button>`).join('')}</div>`:''}
       ${renderMafiaChatHTML()}`;
-
   } else if(role==='boschetar'){
     sub.textContent='Mergi la cineva după o carte';
-    content.innerHTML=`
-      <div class="sec-label">Mergi la cineva după o carte</div>
-      <div class="target-grid">${alive.map(p=>`
-        <button class="target-btn ${S.nightTarget===p.id?'sel':''}" onclick="doNightAction('boschetar_visit','${p.id}')">
-          ${esc(p.name)}
-        </button>`).join('')}</div>
-      ${executorExtra}`;
-
+    content.innerHTML=targetGrid(alive,'boschetar_visit','Mergi la cineva după o carte')+executorExtra;
   } else if(role==='executor'){
     sub.textContent='Trimite cererea de eliminare';
     content.innerHTML=renderExecutorUIHTML();
-
   } else if(role==='locuitor'||role==='avocat'){
     sub.textContent='Dormi liniștit...';
     content.innerHTML=`<div class="night-phase-box">
       <div class="night-phase-name">🌙 Noaptea</div>
       <div class="night-waiting">Nu ai acțiuni nocturne. Stai liniștit!</div>
     </div>`;
-
   } else {
     sub.textContent='Stai liniștit...';
     content.innerHTML=`<div class="night-phase-box">
@@ -1325,6 +1330,20 @@ function renderNightContent(msg){
     </div>${executorExtra}`;
   }
 }
+
+// Select target without sending yet
+function selectNightTarget(actionType, targetId){
+  S.nightTarget=targetId;
+  S._pendingAction=actionType;
+  renderNightContent({phase:'active',active:true});
+}
+
+// Confirm and send night action
+function confirmNightAction(actionType){
+  if(!S.nightTarget)return;
+  doNightAction(actionType, S.nightTarget);
+}
+
 
 function renderExecutorUIHTML(){
   if(S.executorWritten) return `<div class="status s-success" style="margin-top:10px;">⚔️ Cerere trimisă! Aștepți răspunsul.</div>`;
@@ -1440,9 +1459,6 @@ function addMafiaChat(sender,message){
 function doNightAction(action,targetId){
   S.nightTarget=targetId;
   send({type:'night_action',action,playerId:S.playerId,targetId});
-  document.querySelectorAll('#np-content .target-btn').forEach(b=>b.classList.remove('sel'));
-  const btns=document.querySelectorAll(`#np-content .target-btn`);
-  btns.forEach(b=>{if(b.getAttribute('onclick')?.includes(targetId))b.classList.add('sel');});
 }
 
 function setCriticAns(ans){
