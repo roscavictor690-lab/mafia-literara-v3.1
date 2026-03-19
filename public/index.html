@@ -531,6 +531,7 @@ body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia
     <div id="tab-vote" style="flex:1;overflow-y:auto;padding:12px 18px;display:none;">
       <div id="vote-content"></div>
     </div>
+    <div id="tab-players" style="flex:1;overflow-y:auto;padding:12px 18px;display:none;"></div>
   </div>
   <div class="bottom-nav">
     <button class="nav-btn active" id="nav-chat-btn" onclick="switchTab('chat')">
@@ -544,9 +545,6 @@ body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia
     </button>
   </div>
 </div>
-
-<!-- PLAYERS TAB (inside day) -->
-<div id="tab-players" style="flex:1;overflow-y:auto;padding:12px 18px;display:none;"></div>
 
 <!-- END -->
 <div id="s-end" class="screen">
@@ -592,8 +590,8 @@ body{background:var(--felt2);color:var(--text);font-family:'EB Garamond',Georgia
   <div style="flex:1;overflow-y:auto;padding:12px 16px;" id="perm-players-list"></div>
 </div>
 
-<!-- PERSISTENT BOTTOM BAR (visible always during game) -->
-<div id="game-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:40;display:none;border-top:1px solid var(--border2);background:rgba(5,12,7,0.97);backdrop-filter:blur(8px);">
+<!-- PERSISTENT BOTTOM BAR for night screens -->
+<div id="game-bottom-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:40;border-top:1px solid var(--border2);background:rgba(5,12,7,0.97);backdrop-filter:blur(8px);">
   <div style="display:flex;">
     <button class="nav-btn" onclick="toggleChat()" id="perm-chat-btn">
       <span class="nav-icon">💬</span><span>Chat</span>
@@ -667,11 +665,7 @@ function showScreen(id){
   const el=document.getElementById(id);
   if(el) el.classList.add('active');
   // Re-attach tab content if switching to day
-  if(id==='s-day'){
-    const dayEl=document.getElementById('s-day');
-    const tp=document.getElementById('tab-players');
-    if(tp&&!dayEl.contains(tp)) dayEl.querySelector('.bottom-nav').before(tp);
-  }
+
 }
 
 function showToast(msg,dur=3500){
@@ -737,7 +731,9 @@ function resetGame(){
 
 // ===== PERMANENT CHAT & PLAYERS =====
 function showGameBottomBar(){
-  document.getElementById('game-bottom-bar').style.display='flex';
+  // Only show on night screens - day has its own bottom nav
+  const isNight = S.phase === 'night';
+  document.getElementById('game-bottom-bar').style.display = isNight ? 'flex' : 'none';
 }
 
 function toggleChat(){
@@ -1194,11 +1190,11 @@ const PHASE_NAMES={
 };
 
 function showNightScreen(){
+  document.getElementById('game-bottom-bar').style.display='flex';
   if(S.isModerator){
     renderNightModPlayers();
     showScreen('s-night-mod');
   } else {
-    // Render night content immediately based on role (parallel night)
     renderNightContent({phase:'active',active:true,role:S.role});
     showScreen('s-night-player');
   }
@@ -1503,6 +1499,8 @@ function showDayScreen(){
   document.getElementById('day-num').textContent=S.dayNumber;
   dayVoteMsgs.length=0;
   S.currentTab='chat';
+  // Hide night bottom bar, day has its own nav
+  document.getElementById('game-bottom-bar').style.display='none';
   switchTab('chat');
   if(S.isModerator)document.getElementById('day-sub').textContent='Moderezi ziua '+S.dayNumber;
   showScreen('s-day');
